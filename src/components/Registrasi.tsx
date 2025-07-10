@@ -218,7 +218,7 @@ const Registrasi = () => {
     if (!formData.name || !formData.email || !formData.password) {
       setErrors((prev) => ({
         ...prev,
-        general: "Name, email, dan password wajib diisi",
+        general: "Data registrasi wajib diisi",
       }));
       return;
     }
