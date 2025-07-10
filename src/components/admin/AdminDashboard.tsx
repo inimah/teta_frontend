@@ -47,7 +47,7 @@ const menus = [
 ];
 
 const AdminDashboard: React.FC = () => {
-  const [stats, setStats] = useState<any>(null);
+  const [, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [loading, setLoading] = useState(true);
@@ -234,10 +234,43 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const monthlyActiveUsers = stats?.monthlyActiveUsers || {
-    labels: ["Januari", "Februari", "Maret", "April", "Mei"],
-    data: [200, 150, 180, 210, 170],
-  };
+  function getMonthlyVisitors(dailyVisitors: {
+    labels: string[];
+    data: number[];
+  }) {
+    const monthly: { [month: string]: number } = {};
+    dailyVisitors.labels.forEach((date, i) => {
+      // Ambil "YYYY-MM" dari tanggal
+      const month = date.slice(0, 7);
+      monthly[month] = (monthly[month] || 0) + (dailyVisitors.data[i] || 0);
+    });
+    // Return format untuk chart.js
+    const labels = Object.keys(monthly);
+    const data = labels.map((m) => monthly[m]);
+    return { labels, data };
+  }
+  const [monthlyVisitors, setMonthlyVisitors] = useState<{
+    labels: string[];
+    data: number[];
+  }>({ labels: [], data: [] });
+
+  useEffect(() => {
+    // Ambil data harian (seperti statistik)
+    const fetchMonthly = async () => {
+      const token = localStorage.getItem("authToken");
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      // Ambil data 1 tahun terakhir (atau sesuai kebutuhan)
+      const now = new Date();
+      const yearAgo = new Date();
+      yearAgo.setFullYear(now.getFullYear() - 1);
+      const url = `/api/admin/daily-visitors?start=${yearAgo
+        .toISOString()
+        .slice(0, 10)}&end=${now.toISOString().slice(0, 10)}`;
+      const res = await axios.get(url, config);
+      setMonthlyVisitors(getMonthlyVisitors(res.data));
+    };
+    fetchMonthly();
+  }, []);
 
   function getAge(birthdate: string): number {
     const today = new Date();
@@ -545,30 +578,61 @@ const AdminDashboard: React.FC = () => {
           <div className="grid grid-cols-2 grid-rows-2 gap-6 mb-6 h-[32rem]">
             <div className="bg-white p-4 rounded-xl shadow flex flex-col h-full min-h-0">
               <h2 className=" mb-2 text-base text-black text-center w-full">
-                Statistik Pengguna
+                Statistik Kunjungan Per Bulan
               </h2>
+
               <div className="flex-1 flex items-center justify-center min-h-0">
                 <Bar
                   data={{
-                    labels: monthlyActiveUsers.labels,
+                    // Ambil bulan tahun 2025 sampai bulan sekarang
+                    labels: (() => {
+                      const now = new Date();
+                      const currentMonth = now.getMonth() + 1; // 1-12
+                      const months = [];
+                      for (let m = 1; m <= currentMonth; m++) {
+                        const mm = m.toString().padStart(2, "0");
+                        months.push(`2025-${mm}`);
+                      }
+                      const bulan = [
+                        "",
+                        "Januari",
+                        "Februari",
+                        "Maret",
+                        "April",
+                        "Mei",
+                        "Juni",
+                        "Juli",
+                        "Agustus",
+                        "September",
+                        "Oktober",
+                        "November",
+                        "Desember",
+                      ];
+                      return months.map((m) => {
+                        const [y, mo] = m.split("-");
+                        return `${bulan[parseInt(mo, 10)]} ${y}`;
+                      });
+                    })(),
                     datasets: [
                       {
-                        label: "Aktif",
-                        data: monthlyActiveUsers.data,
-                        backgroundColor: [
-                          "#60a5fa",
-                          "#38bdf8",
-                          "#a5b4fc",
-                          "#fbbf24",
-                          "#f472b6",
-                          "#34d399",
-                          "#f87171",
-                          "#facc15",
-                          "#818cf8",
-                          "#f472b6",
-                          "#fcd34d",
-                          "#5eead4",
-                        ],
+                        label: "Jumlah Kunjungan",
+                        data: (() => {
+                          const now = new Date();
+                          const currentMonth = now.getMonth() + 1;
+                          const months = [];
+                          for (let m = 1; m <= currentMonth; m++) {
+                            const mm = m.toString().padStart(2, "0");
+                            months.push(`2025-${mm}`);
+                          }
+                          return months.map((m) =>
+                            monthlyVisitors.labels.indexOf(m) !== -1
+                              ? monthlyVisitors.data[
+                                  monthlyVisitors.labels.indexOf(m)
+                                ]
+                              : 0
+                          );
+                        })(),
+                        backgroundColor: "#60a5fa",
                         borderRadius: 8,
                       },
                     ],
@@ -1042,11 +1106,7 @@ const AdminDashboard: React.FC = () => {
                           className="p-2 rounded transition-colors hover:bg-red-50"
                           title="Hapus"
                           onClick={async () => {
-                            if (
-                              window.confirm(
-                                "Yakin ingin menghapus kategori ini?"
-                              )
-                            ) {
+                            if (toast.success("Kategori berhasil dihapus")) {
                               const token = localStorage.getItem("authToken");
                               const config = {
                                 headers: { Authorization: `Bearer ${token}` },
@@ -1561,6 +1621,7 @@ const AdminDashboard: React.FC = () => {
                             setContents(
                               contents.filter((x: any) => x._id !== c._id)
                             );
+                            toast.success("Konten berhasil dihapus");
                           }}
                         >
                           <svg
