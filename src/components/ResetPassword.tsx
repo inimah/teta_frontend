@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -23,7 +24,7 @@ const ResetPassword = () => {
     })
       .then((response) => {
         if (response.data.status) {
-          alert("Password has been successfully updated!");
+          toast.success("Password berhasil direset");
           navigate("/");
         } else {
           setErrorMessage(response.data.message || "Failed to reset password");
