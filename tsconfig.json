@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "composite": true, // Dibutuhkan untuk proyek berbasis referensi
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
