@@ -453,7 +453,7 @@ const Home: React.FC = (): React.ReactElement => {
         ];
 
         const response = await axios.post(
-          "http://localhost:5007/api/openrouter/chat",
+          "http://localhost:5000/api/openrouter/chat",
           // "http://localhost:5006/generate-sealion",
 
           {

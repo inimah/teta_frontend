@@ -23,7 +23,7 @@
     "react-datepicker": "^8.2.1",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
-    "react-quill": "^2.0.0-beta.4",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^7.3.0",
     "react-toastify": "^11.0.5",
     "tailwindcss": "^4.0.14"
@@ -42,5 +42,8 @@
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0"
+  },
+  "overrides": {
+  	"quill": "2.0.0"
   }
 }
