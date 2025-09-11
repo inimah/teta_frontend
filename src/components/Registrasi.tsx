@@ -1,5 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { applyTheme } from "../themes/applyTheme";
@@ -36,25 +36,32 @@ const Registrasi = () => {
 
   // const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [formData, setFormData] = useState({
-    name: "", // Ganti "username" menjadi "name"
+    name: "",
+    sapaan: "",
     email: "",
-    // hp: "", // Tambahkan field untuk nomor HP
+    // hp: "", 
     password: "",
+    confirmPassword: "",
     birthdate: "",
-    sex: "", // Ganti "gender" menjadi "sex"
+    sex: "",
   });
+
+  const [sapaanTouched, setSapaanTouched] = useState(false); // <-- NEW
 
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
+    sapaan?: string;
     // hp?: string;
     password?: string;
+    confirmPassword?: string;
     general?: string;
     sex?: string;
+    birthdate?: string;
   }>({});
 
-  const [isCheckingName, setIsCheckingName] = useState(false);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  // const [isCheckingName, setIsCheckingName] = useState(false);
+  // const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isSubmitted] = useState(false);
 
   useEffect(() => {
@@ -63,114 +70,235 @@ const Registrasi = () => {
     applyTheme(theme);
   }, []);
 
-  // Check name availability
-  useEffect(() => {
-    const checkName = async () => {
-      if (!formData.name || isCheckingName) return;
+  // ===== Batas umur 12–25 tahun =====
+  const getAge = (birthISO: string) => {
+    const birth = new Date(birthISO);
+    if (isNaN(birth.getTime())) return NaN;
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+    return age;
+  };
 
-      setIsCheckingName(true);
+  const today = new Date();
+  const minBirthDate = new Date( // paling tua (25 th)
+    today.getFullYear() - 25,
+    today.getMonth(),
+    today.getDate()
+  );
+  const maxBirthDate = new Date( // paling muda (12 th)
+    today.getFullYear() - 12,
+    today.getMonth(),
+    today.getDate()
+  );
 
-      try {
-        const response = await fetch(
-          "http://localhost:5173/api/auth/check-name",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ name: formData.name }),
-          }
-        );
+  // // Check name availability
+  // useEffect(() => {
+  //   const checkName = async () => {
+  //     if (!formData.name || isCheckingName) return;
 
-        if (!response.ok) {
-          throw new Error("Failed to check name");
-        }
+  //     setIsCheckingName(true);
 
-        const data = await response.json();
+  //     try {
+  //       const response = await fetch(
+  //         "http://localhost:5173/api/auth/check-name",
+  //         {
+  //           method: "POST",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //           },
+  //           body: JSON.stringify({ name: formData.name }),
+  //         }
+  //       );
 
-        if (data.exists) {
-          setErrors((prev) => ({
-            ...prev,
-            name: "Nama ini sudah terdaftar, silahkan gunakan nama lain",
-          }));
-        } else {
-          setErrors((prev) => ({
-            ...prev,
-            name: undefined,
-          }));
-        }
-      } catch (error) {
-        console.error("Error checking name:", error);
-      } finally {
-        setIsCheckingName(false);
-      }
-    };
+  //       if (!response.ok) {
+  //         throw new Error("Failed to check name");
+  //       }
 
-    const timeoutId = setTimeout(() => {
-      checkName();
-    }, 500);
+  //       const data = await response.json();
 
-    return () => clearTimeout(timeoutId);
-  }, [formData.name, isCheckingName]);
+  //       if (data.exists) {
+  //         setErrors((prev) => ({
+  //           ...prev,
+  //           name: "Nama ini sudah terdaftar, silahkan gunakan nama lain",
+  //         }));
+  //       } else {
+  //         setErrors((prev) => ({
+  //           ...prev,
+  //           name: undefined,
+  //         }));
+  //       }
+  //     } catch (error) {
+  //       console.error("Error checking name:", error);
+  //     } finally {
+  //       setIsCheckingName(false);
+  //     }
+  //   };
+
+  //   const timeoutId = setTimeout(() => {
+  //     checkName();
+  //   }, 500);
+
+  //   return () => clearTimeout(timeoutId);
+  // }, [formData.name, isCheckingName]);
 
   // Check email availability
-  useEffect(() => {
-    const checkEmail = async () => {
-      if (!formData.email || isCheckingEmail) return;
+  // useEffect(() => {
+  //   const checkEmail = async () => {
+  //     if (!formData.email || isCheckingEmail) return;
 
-      setIsCheckingEmail(true);
+  //     setIsCheckingEmail(true);
 
-      try {
-        const response = await fetch(
-          "http://localhost:5173/api/auth/check-email",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email: formData.email }),
-          }
-        );
+  //     try {
+  //       const response = await fetch(
+  //         "http://localhost:5173/api/auth/check-email",
+  //         {
+  //           method: "POST",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //           },
+  //           body: JSON.stringify({ email: formData.email }),
+  //         }
+  //       );
 
-        if (!response.ok) {
-          throw new Error("Failed to check email");
-        }
+  //       if (!response.ok) {
+  //         throw new Error("Failed to check email");
+  //       }
 
-        const data = await response.json();
+  //       const data = await response.json();
 
-        if (data.exists) {
-          setErrors((prev) => ({
-            ...prev,
-            email: "Email ini sudah terdaftar, silahkan lakukan login",
-          }));
-        } else {
-          setErrors((prev) => ({
-            ...prev,
-            email: undefined,
-          }));
-        }
-      } catch (error) {
-        console.error("Error checking email:", error);
-      } finally {
-        setIsCheckingEmail(false);
+  //       if (data.exists) {
+  //         setErrors((prev) => ({
+  //           ...prev,
+  //           email: "Email ini sudah terdaftar, silahkan lakukan login",
+  //         }));
+  //       } else {
+  //         setErrors((prev) => ({
+  //           ...prev,
+  //           email: undefined,
+  //         }));
+  //       }
+  //     } catch (error) {
+  //       console.error("Error checking email:", error);
+  //     } finally {
+  //       setIsCheckingEmail(false);
+  //     }
+  //   };
+
+  //   const timeoutId = setTimeout(() => {
+  //     checkEmail();
+  //   }, 500);
+
+  //   return () => clearTimeout(timeoutId);
+  // }, [formData.email, isCheckingEmail]);
+  const EMAIL_CHECK_DELAY = 500;
+
+  const EmailField = ({ formData, setErrors, isSubmitting }: {
+    formData: { email?: string };
+    setErrors: React.Dispatch<React.SetStateAction<Record<string, string | undefined>>>;
+    isSubmitting: boolean;
+  }) => {
+    const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+    const debounceId = useRef<number | null>(null);
+    const lastRequestedEmailRef = useRef<string>("");   // tracks the email used for the in-flight request
+    const abortRef = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+      const email = (formData.email ?? "").trim().toLowerCase();
+
+      // cancel any pending timer/request on dependency change
+      if (debounceId.current) {
+        clearTimeout(debounceId.current);
+        debounceId.current = null;
       }
-    };
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
 
-    const timeoutId = setTimeout(() => {
-      checkEmail();
-    }, 500);
+      // don’t check while submitting or with empty/invalid input
+      if (!email || isSubmitting) {
+        setIsCheckingEmail(false);
+        return;
+      }
 
-    return () => clearTimeout(timeoutId);
-  }, [formData.email, isCheckingEmail]);
+      debounceId.current = window.setTimeout(async () => {
+        setIsCheckingEmail(true);
+
+        const controller = new AbortController();
+        abortRef.current = controller;
+        lastRequestedEmailRef.current = email;
+
+        try {
+          // Prefer using a base URL (proxy) like /api/auth/check-email
+          const res = await fetch("/api/auth/check-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+            signal: controller.signal,
+          });
+
+          // If you switch server to return 409 when exists, you can branch on res.status === 409
+          if (!res.ok) throw new Error("Failed to check email");
+
+          const data = await res.json(); // { exists: boolean }
+
+          // Only apply if this response matches the current input
+          if (lastRequestedEmailRef.current !== (formData.email ?? "").trim().toLowerCase()) {
+            return; // stale response; ignore
+          }
+
+          if (data.exists) {
+            setErrors(prev => ({ ...prev, email: "Email ini sudah terdaftar, silahkan lakukan login" }));
+          } else {
+            setErrors(prev => ({ ...prev, email: undefined }));
+          }
+        } catch (err) {
+          if ((err as any)?.name !== "AbortError") {
+            console.error("Error checking email:", err);
+            // don’t overwrite existing error messaging on network hiccups
+          }
+        } finally {
+          if (!controller.signal.aborted) {
+            setIsCheckingEmail(false);
+            abortRef.current = null;
+          }
+        }
+      }, EMAIL_CHECK_DELAY);
+
+      // cleanup on unmount or dependency change
+      return () => {
+        if (debounceId.current) clearTimeout(debounceId.current);
+        if (abortRef.current) abortRef.current.abort();
+      };
+      // IMPORTANT: depend only on the email and isSubmitting
+    }, [formData.email, isSubmitting, setErrors]);
+
+    return null;
+  };
+
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
+
+    // gunakan functional update supaya bisa lihat state sebelumnya
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+
+      // Auto-fill: kalau user mengubah "name" dan sapaan belum pernah disentuh (atau masih sama dengan name lama), salin ke sapaan
+      if (name === "name" && !sapaanTouched) {
+        if (!prev.sapaan || prev.sapaan === prev.name) {
+          next.sapaan = value;
+        }
+      }
+
+      return next;
     });
+
+    if (name === "sapaan") setSapaanTouched(true); // sekali user sentuh, stop auto-fill
 
     if (name === "password") {
       setErrors((prev) => ({
@@ -179,6 +307,19 @@ const Registrasi = () => {
           value.length < 8
             ? "Password harus memiliki minimal 8 karakter"
             : undefined,
+        // validasi konfirmasi juga setiap password berubah
+        confirmPassword:
+          formData.confirmPassword && formData.confirmPassword !== value
+            ? "Konfirmasi password tidak sama"
+            : undefined,
+      }));
+    }
+
+    if (name === "confirmPassword") {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword:
+          value !== formData.password ? "Konfirmasi password tidak sama" : undefined,
       }));
     }
 
@@ -215,28 +356,62 @@ const Registrasi = () => {
     e.preventDefault();
 
     // Validasi data sebelum dikirim
-    if (!formData.name || !formData.email || !formData.password) {
+    if (
+      !formData.name ||
+      !formData.sapaan ||  
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword ||
+      !formData.birthdate ||
+      !formData.sex
+    ) {
+      setErrors((prev) => ({ ...prev, general: "Data registrasi wajib diisi" }));
+      return;
+    }
+
+    // Validasi panjang password
+    if (formData.password.length < 8) {
       setErrors((prev) => ({
         ...prev,
-        general: "Data registrasi wajib diisi",
+        password: "Password harus memiliki minimal 8 karakter",
       }));
       return;
     }
 
+    // Validasi password & konfirmasi
+    if (formData.password !== formData.confirmPassword) {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: "Konfirmasi password tidak sama",
+      }));
+      return;
+    }
+
+    // Validasi umur 12–25
+    const age = getAge(formData.birthdate);
+    if (isNaN(age) || age < 12 || age > 25) {
+      setErrors((prev) => ({ ...prev, birthdate: "Maaf, Anda harus berumur 12–25 tahun" }));
+      return;
+    }
+
+    // Log data sebelum kirim
     console.log("Data yang dikirim ke backend:", formData);
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      birthdate: "",
-      sex: "",
-    });
 
     try {
+      const submittedEmail = formData.email; // simpan sebelum reset/navigate
+
       const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        // kirimkan tanpa confirmPassword ke backend
+        body: JSON.stringify({
+          name: formData.name,
+          sapaan: formData.sapaan,
+          email: formData.email,
+          password: formData.password,
+          birthdate: formData.birthdate,
+          sex: formData.sex,
+        }),
       });
 
       const data = await response.json();
@@ -251,22 +426,26 @@ const Registrasi = () => {
       toast.success("Registrasi berhasil, Silahkan cek email untuk konfirmasi");
 
       setTimeout(() => {
-        navigate("/confirm", { state: { email: formData.email } });
+        navigate("/confirm", { state: { email: submittedEmail } });
       }, 200);
+
+      // Reset SETELAH sukses
+      setFormData({
+        name: "",
+        sapaan: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        birthdate: "",
+        sex: "",
+      });
+
     } catch (error) {
       console.error("Error saat registrasi:", error);
       toast.error("Terjadi kesalahan saat registrasi");
     }
   };
 
-  const today = new Date();
-  const maxDate = new Date(
-    today.getFullYear() - 12,
-    today.getMonth(),
-    today.getDate()
-  )
-    .toISOString()
-    .split("T")[0]; //
   return (
     <div className="relative flex items-center justify-center min-h-screen min-w-full main-bg">
       <div className="absolute inset-0 -z-10 main-bg" />
@@ -279,15 +458,15 @@ const Registrasi = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Nama Lengkap */}
           <div className="relative">
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2.5 rounded-md text-sm register-form shadow-sm ${
-                errors.name ? "border-red-300 bg-red-50" : ""
-              }`}
+              className={`w-full px-4 py-2.5 rounded-md text-sm register-form shadow-sm ${errors.name ? "border-red-300 bg-red-50" : ""
+                }`}
               placeholder="Nama Lengkap"
               autoComplete="off"
             />
@@ -295,15 +474,31 @@ const Registrasi = () => {
               <p className="text-red-500 text-sm mt-2 ml-1">{errors.name}</p>
             )}
           </div>
+
+          {/* Nama Sapaan (wajib) */}
+          <div className="relative">
+            <input
+              type="text"
+              name="sapaan"
+              value={formData.sapaan}
+              onChange={handleInputChange}
+              className={`w-full px-4 py-2.5 rounded-md text-sm register-form shadow-sm ${errors.sapaan ? "border-red-300 bg-red-50" : ""}`}
+              placeholder="Nama sapaan kamu"
+              autoComplete="off"
+              required
+            />
+            {errors.sapaan && <p className="text-red-500 text-sm mt-2 ml-1">{errors.sapaan}</p>}
+          </div>
+
+          {/* Email */}
           <div className="relative">
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2.5 border rounded-md text-sm  register-form shadow-sm ${
-                errors.email ? "border-red-300 bg-red-50" : ""
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-md text-sm  register-form shadow-sm ${errors.email ? "border-red-300 bg-red-50" : ""
+                }`}
               placeholder="Email"
               autoComplete="off"
             />
@@ -311,50 +506,67 @@ const Registrasi = () => {
               <p className="text-red-500 text-sm mt-2 ml-1">{errors.email}</p>
             )}
           </div>
+
+          {/* Tanggal lahir */}
           <div className="relative">
             <DatePicker
               selected={
                 formData.birthdate ? new Date(formData.birthdate) : null
               }
               onChange={(date: Date | null) => {
-                setFormData({
-                  ...formData,
-                  birthdate: date ? date.toISOString().split("T")[0] : "",
-                });
+                const iso = date ? date.toISOString().split("T")[0] : "";
+                setFormData({ ...formData, birthdate: iso });
+
+                // Validasi realtime umur 12–25
+                if (!iso) {
+                  setErrors((prev) => ({ ...prev, birthdate: "Tanggal lahir harus diisi" }));
+                } else {
+                  const age = getAge(iso);
+                  setErrors((prev) => ({
+                    ...prev,
+                    birthdate:
+                      isNaN(age)
+                        ? "Tanggal lahir tidak valid"
+                        : age < 12 || age > 25
+                          ? "Maaf, Anda harus berumur 12–25 tahun"
+                          : undefined,
+                  }));
+                }
               }}
+
               dateFormat="dd/MM/yyyy"
-              maxDate={new Date(maxDate)}
+              minDate={minBirthDate}
+              maxDate={new Date(maxBirthDate)}
               placeholderText="Pilih tanggal lahir"
-              className={`w-full px-4 py-2.5 border rounded-md text-sm  register-form shadow-sm ${
-                isSubmitted && !formData.birthdate
-                  ? "border-red-300 bg-red-50"
-                  : ""
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-md text-sm  register-form shadow-sm ${isSubmitted && !formData.birthdate
+                ? "border-red-300 bg-red-50"
+                : ""
+                }`}
               showMonthDropdown
               showYearDropdown
               dropdownMode="select"
               wrapperClassName="w-full"
             />
-            {formData.birthdate && (
+            {/* Info / error untuk birthdate */}
+            {formData.birthdate && !errors.birthdate && (
               <p className="text-blue-500 text-sm mt-2 ml-1">
                 Tanggal dipilih:{" "}
                 {new Date(formData.birthdate).toLocaleDateString("id-ID")}
               </p>
             )}
-            {isSubmitted && !formData.birthdate && (
-              <p className="text-red-500 text-sm mt-2 ml-1">
-                Tanggal lahir harus diisi
-              </p>
+            {errors.birthdate && (
+              <p className="text-red-500 text-sm mt-2 ml-1">{errors.birthdate}</p>
             )}
           </div>
+
+           {/* Jenis Kelamin */}
           <div className="relative">
             <select
               name="sex"
               value={formData.sex}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2.5 border rounded-md text-sm  register-form shadow-sm ${
-                isSubmitted && !formData.sex ? "border-red-300 bg-red-50" : ""
-              } ${formData.sex === "" ? "text-gray-500" : "text-gray-700"}`}
+              className={`w-full px-4 py-2.5 border rounded-md text-sm  register-form shadow-sm ${isSubmitted && !formData.sex ? "border-red-300 bg-red-50" : ""
+                } ${formData.sex === "" ? "text-gray-500" : "text-gray-700"}`}
             >
               <option value="">Pilih Jenis Kelamin</option>
               <option value="M">Laki-laki</option>
@@ -366,21 +578,41 @@ const Registrasi = () => {
               </p>
             )}
           </div>
+
+          {/* Password */}
           <div className="relative">
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2.5 border rounded-md text-sm register-form shadow-sm ${
-                errors.password ? "border-red-300 bg-red-50" : ""
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-md text-sm register-form shadow-sm ${errors.password ? "border-red-300 bg-red-50" : ""
+                }`}
               placeholder="Password"
               autoComplete="off"
             />
             {errors.password && (
               <p className="text-red-500 text-sm mt-2 ml-1">
                 {errors.password}
+              </p>
+            )}
+          </div>
+
+          {/* Konfirmasi Password */}
+          <div className="relative">
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              className={`w-full px-4 py-2.5 border rounded-md text-sm register-form shadow-sm ${errors.confirmPassword ? "border-red-300 bg-red-50" : ""
+                }`}
+              placeholder="Konfirmasi Password"
+              autoComplete="off"
+            />
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-sm mt-2 ml-1">
+                {errors.confirmPassword}
               </p>
             )}
           </div>

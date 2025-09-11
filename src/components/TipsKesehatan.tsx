@@ -225,7 +225,7 @@ const TipsKesehatan: React.FC = () => {
                 </div>
 
                 <div
-                  className="flower-content mb-3 whitespace-pre-line flex-1 leading-relaxed text-center"
+                  className="flower-content mb-3 whitespace-pre-line flex-1 leading-relaxed text-justify"
                   dangerouslySetInnerHTML={{ __html: selectedTip.isi_konten }}
                 />
 

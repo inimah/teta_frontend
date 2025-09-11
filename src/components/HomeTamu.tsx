@@ -5,7 +5,7 @@ import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 type Message = {
   role: "user" | "bot";
   content: string;
-  timestamp?: number;
+  timestamp: number;
 };
 
 type Chat = {
@@ -21,6 +21,13 @@ const EMOTIONS = [
   { label: "😬 Cemas", value: "cemas" },
 ];
 
+const sortByRecent = (arr: Chat[]) =>
+  [...arr].sort((a, b) => {
+    const at = a.messages.at(-1)?.timestamp ?? 0;
+    const bt = b.messages.at(-1)?.timestamp ?? 0;
+    return bt - at;
+  });
+
 const HomeTamu = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,9 +42,10 @@ const HomeTamu = () => {
   useEffect(() => {
     const name = localStorage.getItem("guestName") || "Tamu";
     setGuestName(name);
-    // Otomatis buat chat baru saat pertama kali masuk
-    if (chats.length === 0) {
-      handleNewChat();
+    // buat ID sesi baru, tapi JANGAN tampilkan di riwayat dulu
+    if (!currentChatId) {
+      const idBaru = Date.now();
+      setCurrentChatId(idBaru);
     }
     // eslint-disable-next-line
   }, []);
@@ -48,45 +56,69 @@ const HomeTamu = () => {
     }
   }, [chats, currentChatId, isBotTyping]);
 
-  // const handleBackClick = () => navigate(-1);
-
-  // Mirip Home: handleNewChat langsung buat sesi baru
   const handleNewChat = () => {
-    const newChat: Chat = {
-      id: Date.now(),
-      title: "Percakapan Baru",
-      messages: [],
-    };
-    setChats((prev) => [newChat, ...prev]);
-    setCurrentChatId(newChat.id);
+    // hanya ganti currentChatId; riwayat belum ditambah sampai pesan pertama dikirim
+    const idBaru = Date.now();
+    setCurrentChatId(idBaru);
     setSidebarOpen(false);
   };
 
-  // Icon emosi bisa diklik dan langsung kirim ke bot
+  // kirim emosi cepat
   const handleEmotionClick = async (emotion: string): Promise<void> => {
     await handleSendMessage(`Saya merasa ${emotion}`);
   };
 
-  const currentChat = chats.find((chat) => chat.id === currentChatId);
+  const currentChat = chats.find((chat) => chat.id === currentChatId) || null;
 
-  // Fungsi kirim pesan ke bot (tidak simpan ke DB)
+  // helper: pastikan sesi ada di daftar; kalau belum, buat dan push SEKALIAN dengan judul dari pesan pertama
+  const ensureChatWithFirstMessage = (messageText: string) => {
+    if (!currentChatId) return { created: false };
+    const exists = chats.some((c) => c.id === currentChatId);
+    if (exists) return { created: false };
+
+    const first: Message = {
+      role: "user",
+      content: messageText,
+      timestamp: Date.now(),
+    };
+    const newChat: Chat = {
+      id: currentChatId,
+      title: messageText.slice(0, 30),
+      messages: [first],
+    };
+    setChats((prev) => sortByRecent([...prev, newChat]));
+    return { created: true };
+  };
+
   const handleSendMessage = async (message: string) => {
-    if (!currentChatId) return;
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === currentChatId
-          ? {
-              ...chat,
-              messages: [
-                ...chat.messages,
-                { role: "user", content: message, timestamp: Date.now() },
-              ],
-              title:
-                chat.messages.length === 0 ? message.slice(0, 30) : chat.title,
-            }
-          : chat
-      )
-    );
+    if (!currentChatId || !message.trim()) return;
+
+    // jika belum ada di riwayat → buat sekarang (judul diambil dari pesan pertama)
+    const createdNow = ensureChatWithFirstMessage(message).created;
+
+    // kalau sudah ada, tambahkan pesan user ke sesi tsb
+    if (!createdNow) {
+      setChats((prev) =>
+        sortByRecent(
+          prev.map((chat) =>
+            chat.id === currentChatId
+              ? {
+                  ...chat,
+                  title:
+                    chat.messages.length === 0
+                      ? message.slice(0, 30)
+                      : chat.title,
+                  messages: [
+                    ...chat.messages,
+                    { role: "user", content: message, timestamp: Date.now() },
+                  ],
+                }
+              : chat
+          )
+        )
+      );
+    }
+
     setIsBotTyping(true);
 
     try {
@@ -100,44 +132,46 @@ const HomeTamu = () => {
               content:
                 "Anda adalah asisten psikolog untuk remaja Indonesia usia 15-18 tahun. Jawab dengan empati dan singkat.",
             },
-            {
-              role: "user",
-              content: message,
-            },
+            { role: "user", content: message },
           ],
         }),
       });
       const data = await res.json();
-      const botReply = data.answer || "Maaf, saya tidak mengerti.";
-      setChats((prevChats) =>
-        prevChats.map((chat) =>
-          chat.id === currentChatId
-            ? {
-                ...chat,
-                messages: [
-                  ...chat.messages,
-                  { role: "bot", content: botReply, timestamp: Date.now() },
-                ],
-              }
-            : chat
+      const botReply = (data && data.answer) || "Maaf, saya tidak mengerti.";
+      setChats((prev) =>
+        sortByRecent(
+          prev.map((chat) =>
+            chat.id === currentChatId
+              ? {
+                  ...chat,
+                  messages: [
+                    ...chat.messages,
+                    { role: "bot", content: botReply, timestamp: Date.now() },
+                  ],
+                }
+              : chat
+          )
         )
       );
-    } catch (err) {
-      setChats((prevChats) =>
-        prevChats.map((chat) =>
-          chat.id === currentChatId
-            ? {
-                ...chat,
-                messages: [
-                  ...chat.messages,
-                  { role: "bot", content: "Bot error.", timestamp: Date.now() },
-                ],
-              }
-            : chat
+    } catch {
+      setChats((prev) =>
+        sortByRecent(
+          prev.map((chat) =>
+            chat.id === currentChatId
+              ? {
+                  ...chat,
+                  messages: [
+                    ...chat.messages,
+                    { role: "bot", content: "Bot error.", timestamp: Date.now() },
+                  ],
+                }
+              : chat
+          )
         )
       );
+    } finally {
+      setIsBotTyping(false);
     }
-    setIsBotTyping(false);
   };
 
   const handleSend = async () => {
@@ -148,12 +182,9 @@ const HomeTamu = () => {
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSend();
-    }
+    if (e.key === "Enter") handleSend();
   };
 
-  // Greeting function (mirip Home)
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour >= 4 && hour < 11) return "Selamat pagi";
@@ -203,7 +234,7 @@ const HomeTamu = () => {
               style={{ display: "block" }}
             />
           </div>
-          {/* Menu */}
+          {/* Menu & History */}
           <div className="flex h-screen overflow-y-auto">
             <div className="w-64 h-full flex flex-col chat-sidebar">
               <div className="grid grid-cols-1 gap-1 mt-2">
@@ -290,6 +321,7 @@ const HomeTamu = () => {
                   </div>
                 </div>
               </div>
+
               {/* Riwayat Chat */}
               <div className="flex items-center py-3">
                 <div className="chat-riwayat-text"></div>
@@ -327,17 +359,16 @@ const HomeTamu = () => {
                           />
                         </svg>
                       </div>
-                      <div className="truncate text-xs flex-1">
-                        {chat.title}
-                      </div>
+                      <div className="truncate text-xs flex-1">{chat.title}</div>
                     </div>
                   </div>
                 ))}
+                {/* tidak ada sesi kosong => tidak ada "Percakapan Baru" nongol */}
               </div>
-              {/* Logout button dihapus */}
             </div>
           </div>
         </div>
+
         {/* Main Area */}
         <div className="flex flex-col flex-1 h-full min-h-0">
           {/* Header */}
@@ -366,6 +397,7 @@ const HomeTamu = () => {
               <span className="text-username">{guestName || "Tamu"}</span>
             </span>
           </div>
+
           {/* Chat Area & Input */}
           <div className="chat-messages-container flex flex-col flex-1 min-h-0">
             <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
@@ -399,7 +431,6 @@ const HomeTamu = () => {
                         : null
                     }
                   >
-                    {/* Avatar Bot */}
                     {msg.role === "bot" && (
                       <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">
                         C
@@ -415,14 +446,12 @@ const HomeTamu = () => {
                     >
                       <div className="text-sm">{msg.content}</div>
                       <div className="text-xs mt-1 text-right text-black">
-                        {msg.timestamp &&
-                          new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                        {new Date(msg.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </div>
                     </div>
-                    {/* Avatar User */}
                     {msg.role === "user" && (
                       <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm ml-2 mt-1 flex-shrink-0">
                         {guestName && guestName.charAt(0).toUpperCase()}
@@ -444,6 +473,7 @@ const HomeTamu = () => {
                 </div>
               )}
             </div>
+
             {/* Input area */}
             <div className="p-6 chat-section mt-6">
               <div className="max-w-4xl mx-auto">
@@ -478,7 +508,7 @@ const HomeTamu = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> 
     </div>
   );
 };

@@ -17,7 +17,13 @@ interface Quote {
 }
 
 interface FavoriteResponse {
-  quote_id: string;
+  _id: string;
+  user_id: string;
+  quote_id: {
+    _id: string;
+    text: string;
+    author: string;
+  } | null;
 }
 
 const moods: Mood[] = [
@@ -73,25 +79,33 @@ const Quotes: React.FC = () => {
     setUserId(storedUserId);
   }, []);
 
+    // ✅ FIX: satu useEffect saja untuk ambil favorit (konsisten ke /api/user-favs/:userId)
   useEffect(() => {
-    const fetchFavorites = async (): Promise<void> => {
-      if (!userId) return;
+    if (!userId) return;
+    let aborted = false;
 
+    (async () => {
       try {
-        const res = await fetch(`/api/quotes/user-favs/${userId}`);
-        if (res.ok) {
-          const data: FavoriteResponse[] = await res.json();
-          console.log("Favorites data:", data);
-          setFavoriteIds(data.map((fav: FavoriteResponse) => fav.quote_id));
+        const res = await fetch(`/api/user-favs/${userId}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: FavoriteResponse[] = await res.json();
+
+        const ids = data
+          .filter((fav) => fav.quote_id && fav.quote_id._id)
+          .map((fav) => fav.quote_id!._id);
+
+        if (!aborted) {
+          // dedupe
+          setFavoriteIds(Array.from(new Set(ids)));
         }
       } catch (err) {
-        console.error("Error fetching favorites:", err);
+        if (!aborted) console.error("Error fetching favorites:", err);
       }
-    };
+    })();
 
-    if (userId) {
-      fetchFavorites();
-    }
+    return () => {
+      aborted = true;
+    };
   }, [userId]);
 
   const fetchQuote = async (categoryName: string): Promise<void> => {
@@ -110,71 +124,64 @@ const Quotes: React.FC = () => {
     setLoading(false);
   };
 
+  // ✅ helper dedupe
+  const addFavLocal = (id: string) =>
+    setFavoriteIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  const removeFavLocal = (id: string) =>
+    setFavoriteIds((prev) => prev.filter((x) => x !== id));
+
   const handleFavorite = async (quoteId: string): Promise<void> => {
+    if (!quoteId) return;
     if (!userId) {
-      // TAMU: hanya update state, tidak simpan ke database
-      setFavoriteIds((prev: string[]) => [...prev, quoteId]);
+      addFavLocal(quoteId); // tamu: lokal saja
       return;
     }
-
     try {
-      await fetch("/api/user-favs", {
+      const res = await fetch("/api/user-favs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, quote_id: quoteId }),
       });
-
-      setFavoriteIds((prev: string[]) => [...prev, quoteId]);
+      if (res.ok) addFavLocal(quoteId);
     } catch (err) {
       console.error("Error adding favorite:", err);
     }
   };
 
-  const handleUnfavorite = async (quoteId: string): Promise<void> => {
+const handleUnfavorite = async (quoteId: string): Promise<void> => {
+    if (!quoteId) return;
     if (!userId) {
-      setFavoriteIds((prev: string[]) => prev.filter((id) => id !== quoteId));
+      removeFavLocal(quoteId);
       return;
     }
-
     try {
-      await fetch("/api/user-favs", {
+      const res = await fetch("/api/user-favs", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, quote_id: quoteId }),
       });
-
-      setFavoriteIds((prev: string[]) =>
-        prev.filter((id: string) => id !== quoteId)
-      );
+      if (res.ok) removeFavLocal(quoteId);
     } catch (err) {
       console.error("Error removing favorite:", err);
     }
   };
 
-  const handlePrev = (): void => {
-    setCurrentIndex((prev: number) =>
-      prev === 0 ? quotes.length - 1 : prev - 1
-    );
+ const handlePrev = (): void => {
+    setCurrentIndex((prev: number) => (prev === 0 ? quotes.length - 1 : prev - 1));
   };
 
-  const handleNext = (): void => {
-    setCurrentIndex((prev: number) =>
-      prev === quotes.length - 1 ? 0 : prev + 1
-    );
+ const handleNext = (): void => {
+    setCurrentIndex((prev: number) => (prev === quotes.length - 1 ? 0 : prev + 1));
   };
 
   const handleHeartClick = (): void => {
-    if (quotes.length === 0) return;
-
+    if (!quotes.length) return;
     const currentId = quotes[currentIndex]?._id;
     if (!currentId) return;
-
-    if (favoriteIds.includes(currentId)) {
-      handleUnfavorite(currentId);
-    } else {
-      handleFavorite(currentId);
-    }
+    if (favoriteIds.includes(currentId)) handleUnfavorite(currentId);
+    else handleFavorite(currentId);
   };
+
   const handleMoodClick = (mood: Mood): void => {
     setSelectedMood(mood.label);
     setQuotes([]);
@@ -183,23 +190,15 @@ const Quotes: React.FC = () => {
     fetchQuote(mood.category_name);
 
     setTimeout(() => {
-      if (quoteRef.current) {
-        quoteRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "end",
-        });
-      }
+      quoteRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }, 500);
   };
 
   const currentQuote = quotes[currentIndex];
-  const isCurrentQuoteFavorited = currentQuote
-    ? favoriteIds.includes(currentQuote._id)
-    : false;
-
+  const isCurrentQuoteFavorited = currentQuote ? favoriteIds.includes(currentQuote._id) : false;
   const handleBackClick = () => navigate(-1);
 
-  return (
+ return (
     <div className="min-h-screen w-full flex items-center justify-center bg-theme-background">
       <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl bg-white flex flex-col h-[90vh] overflow-auto">
         <div className="sticky top-0 z-20 bg-white pt-6 pb-2 px-6 rounded-t-3xl">
@@ -214,36 +213,38 @@ const Quotes: React.FC = () => {
             </button>
           </div>
         </div>
+
         <div className="flex flex-col w-full px-6">
           <div className="text-center mb-2 ">
             <h1 className="font-bold text-2xl sm:text-3xl quote-judul font-[Quicksand] text-[#c49e6c] leading-tight">
               Bagaimana perasaanmu hari ini?
             </h1>
           </div>
+
           <div className="flex justify-center w-full mb-16 mt-6">
             <div className="grid grid-cols-3 gap-6 w-full max-w-lg">
               {moods.map((m: Mood) => (
                 <button
                   key={m.label}
                   className={`
-          flex flex-col items-center justify-center 
-          p-4 rounded-2xl border-2 transition-all duration-300
-          hover:scale-105 hover:shadow-lg
-          ${
-            selectedMood === m.label
-              ? "border-gray-300 bg-gray-100 shadow-md"
-              : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-          }
-        `}
+                    flex flex-col items-center justify-center 
+                    p-4 rounded-2xl border-2 transition-all duration-300
+                    hover:scale-105 hover:shadow-lg
+                    ${
+                      selectedMood === m.label
+                        ? "border-gray-300 bg-gray-100 shadow-md"
+                        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                    }
+                  `}
                   onClick={() => handleMoodClick(m)}
                   type="button"
                 >
                   <span className="text-2xl sm:text-3xl mb-2">{m.emoji}</span>
                   <span
                     className={`
-            text-xs sm:text-sm font-medium whitespace-nowrap
-            ${selectedMood === m.label ? "text-gray-500" : "text-gray-600"}
-          `}
+                      text-xs sm:text-sm font-medium whitespace-nowrap
+                      ${selectedMood === m.label ? "text-gray-500" : "text-gray-600"}
+                    `}
                   >
                     {m.label}
                   </span>
@@ -251,22 +252,13 @@ const Quotes: React.FC = () => {
               ))}
             </div>
           </div>
-          <div
-            ref={quoteRef}
-            className="flex-1 flex flex-col items-center justify-center px-6 pb-8 mt-16"
-          >
+           <div ref={quoteRef} className="flex-1 flex flex-col items-center justify-center px-6 pb-8 mt-16">
             {quotes.length > 0 && currentQuote && (
               <div className="w-full max-w-4xl">
                 <div className="flex items-center justify-center gap-6">
                   {quotes.length > 1 && (
                     <button
-                      className="
-              flex items-center justify-center w-12 h-12 
-              bg-white rounded-full shadow-lg border-2 border-gray-200
-              hover:border-gray-300 hover:bg-gray-100
-              transition-all duration-300 hover:scale-110
-              text-gray-400 hover:text-gray-500
-            "
+                      className="flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-lg border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100 transition-all duration-300 hover:scale-110 text-gray-400 hover:text-gray-500"
                       onClick={handlePrev}
                       aria-label="Quote sebelumnya"
                     >
@@ -276,11 +268,11 @@ const Quotes: React.FC = () => {
 
                   <div
                     className={`
-                    flex-1 max-w-2xl min-h-[200px] sm:min-h-[240px]
-                    ${cardColor} rounded-3xl shadow-xl border border-white
-                    flex flex-col justify-between p-8 sm:p-10
-                    transform transition-all duration-500 hover:scale-[1.02]
-                  `}
+                      flex-1 max-w-2xl min-h-[200px] sm:min-h-[240px]
+                      ${cardColor} rounded-3xl shadow-xl border border-white
+                      flex flex-col justify-between p-8 sm:p-10
+                      transform transition-all duration-500 hover:scale-[1.02]
+                    `}
                   >
                     <div className="flex-1 flex items-center justify-center">
                       <p className="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 text-center italic font-medium">
@@ -288,39 +280,34 @@ const Quotes: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-6 pt-4  border-opacity-30">
-                      <button
-                        onClick={handleHeartClick}
-                        className="
-                        flex items-center justify-center w-10 h-10 
-                        rounded-full  transition-all duration-300
-                        hover:scale-110 active:scale-95
-                      "
-                        aria-label={
-                          isCurrentQuoteFavorited
-                            ? "Hapus dari favorit"
-                            : "Tambah ke favorit"
-                        }
-                      >
+                    <div className="flex items-center justify-between mt-6 pt-4">
+                        <button
+                          onClick={handleHeartClick}
+                          type="button"
+                          aria-pressed={isCurrentQuoteFavorited}
+                          aria-label={isCurrentQuoteFavorited ? "Hapus dari favorit" : "Tambah ke favorit"}
+                          className="
+                            flex items-center justify-center
+                            w-12 h-12             /* lebih besar */
+                            bg-white              /* latar putih agar kontras */
+                            rounded-full
+                            shadow-lg border-2 border-gray-200
+                            hover:border-gray-300 hover:bg-gray-50
+                            transition-all duration-300
+                            hover:scale-110 active:scale-95
+                            focus:outline-none focus:ring-2 focus:ring-rose-200
+                          "
+                        >
                         <FaHeart
                           className={`
-                          text-lg transition-all duration-300
-                          ${
-                            isCurrentQuoteFavorited
-                              ? "text-red-500 scale-110"
-                              : "text-gray-400 hover:text-red-400"
-                          }
-                        `}
+                            text-lg transition-all duration-300
+                            ${isCurrentQuoteFavorited ? "text-red-500 scale-110" : "text-gray-400 hover:text-red-400"}
+                          `}
                         />
                       </button>
 
                       <div className="flex-1 text-right">
-                        <span
-                          className={`
-                          text-sm sm:text-base font-semibold
-                          ${cardTextColor} opacity-80
-                        `}
-                        >
+                        <span className={`text-sm sm:text-base font-semibold ${cardTextColor} opacity-80`}>
                           — {currentQuote.author}
                         </span>
                       </div>
@@ -329,13 +316,7 @@ const Quotes: React.FC = () => {
 
                   {quotes.length > 1 && (
                     <button
-                      className="
-              flex items-center justify-center w-12 h-12 
-              bg-white rounded-full shadow-lg border-2 border-gray-200
-              hover:border-gray-300 hover:bg-gray-100
-              transition-all duration-300 hover:scale-110
-              text-gray-400 hover:text-gray-500
-            "
+                      className="flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-lg border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100 transition-all duration-300 hover:scale-110 text-gray-400 hover:text-gray-500"
                       onClick={handleNext}
                       aria-label="Quote selanjutnya"
                     >
@@ -346,7 +327,7 @@ const Quotes: React.FC = () => {
 
                 {quotes.length > 1 && (
                   <div className="flex justify-center mt-6">
-                    <div className="flex items-center gap-2 px-4 py-2  bg-opacity-80 rounded-full shadow-md">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-opacity-80 rounded-full shadow-md">
                       <span className="text-sm text-gray-600 font-medium">
                         {currentIndex + 1} dari {quotes.length}
                       </span>
@@ -359,27 +340,21 @@ const Quotes: React.FC = () => {
             {loading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#c49e6c] mb-4"></div>
-                <p className="text-[#c49e6c] text-lg font-medium">
-                  Memuat kutipan...
-                </p>
-              </div>
-            )}
-            {hasTried && quotes.length === 0 && !loading && selectedMood && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="text-6xl mb-4">😔</div>
-                <p className="text-gray-500 text-lg text-center">
-                  Tidak ada kutipan untuk mood ini.
-                </p>
+                <p className="text-[#c49e6c] text-lg font-medium">Memuat kutipan...</p>
               </div>
             )}
 
-            {/* Initial State */}
+            {hasTried && quotes.length === 0 && !loading && selectedMood && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="text-6xl mb-4">😔</div>
+                <p className="text-gray-500 text-lg text-center">Tidak ada kutipan untuk mood ini.</p>
+              </div>
+            )}
+
             {!selectedMood && !loading && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="text-6xl mb-4">✨</div>
-                <p className="text-gray-500 text-lg">
-                  Pilih mood yang sesuai dengan perasaanmu
-                </p>
+                <p className="text-gray-500 text-lg">Pilih mood yang sesuai dengan perasaanmu</p>
               </div>
             )}
           </div>

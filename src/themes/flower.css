@@ -12,8 +12,8 @@ body,
 }
 .bg-theme-background {
   background-image: url("/flower.png");
-  background-size: auto;
-  background-position: center;
+  background-size: cover;
+  background-position: top;
   background-repeat: no-repeat;
 }
 .user-profile-menu {
@@ -307,7 +307,6 @@ body,
   font-family: "Nunito", sans-serif;
 }
 .chat-emot {
-  background: !important;
   font-family: "Nunito", sans-serif;
 }
 .chat-icon {

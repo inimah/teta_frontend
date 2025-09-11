@@ -13,8 +13,14 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import TipsKesehatan from "./components/TipsKesehatan";
 import Quotes from "./components/Quotes";
 import FavoriteQuotes from "./components/FavoriteQuotes";
+import AboutUs from "./components/AboutUs"; 
 import { ToastContainer } from "react-toastify";
 import ThemeSwitcher from "./components/ThemeSwitcher";
+import ChangePassword from "./components/ChangePassword";
+import MusikRelaksasi from "./components/MusikRelaksasi";
+import PanduanPernapasan from "./components/PanduanPernapasan";
+import RequireAdmin from "./components/admin/RequireAdmin";
+import AdminLogin from "./components/admin/AdminLogin";
 
 function App() {
   return (
@@ -36,6 +42,22 @@ function App() {
         <Route path="/tips-harian" element={<TipsKesehatan />} />
         <Route path="/quotes" element={<Quotes />} />
         <Route path="/favorite-quotes" element={<FavoriteQuotes />} />
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/musik-relaksasi" element={<MusikRelaksasi />} />
+        <Route path="/panduan-pernapasan" element={<PanduanPernapasan />} />
+        <Route path="/" element={<Login />} />
+
+        {/* admin routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RequireAdmin>
+              <AdminDashboard />
+            </RequireAdmin>
+          }
+        />
       </Routes>
     </Router>
   );

@@ -3,6 +3,7 @@ import axios from "axios";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { toast } from "react-toastify";
+
 import {
   FiHome,
   FiUsers,
@@ -150,10 +151,44 @@ const AdminDashboard: React.FC = () => {
     type: "content",
   });
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
-  const handleLogout = () => {
+
+  // const handleLogout = () => {
+  //   localStorage.removeItem("authToken");
+  //   window.location.href = "/";
+  // };
+
+  const handleLogout = async () => {
+  try {
+    // (Opsional) panggil endpoint logout di backend jika ada revoke/blacklist
+    // await axios.post("/auth/logout", {}, { headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` } });
+
+    // Bersihkan local/session storage
     localStorage.removeItem("authToken");
-    window.location.href = "/";
-  };
+    localStorage.removeItem("authUser"); // kalau lib/auth menyimpan user di key ini
+    sessionStorage.removeItem("authToken");
+    sessionStorage.removeItem("authUser");
+
+    // Bersihkan default header Authorization axios (kalau pernah diset global)
+    if (axios.defaults?.headers?.common) {
+      delete axios.defaults.headers.common["Authorization"];
+    }
+
+    // Matikan auto-select Google One Tap biar tidak auto-login lagi sebagai user
+    if (window.google?.accounts?.id?.disableAutoSelect) {
+      window.google.accounts.id.disableAutoSelect();
+    }
+
+    // Arahkan ke halaman login admin, bukan root
+    window.location.replace("/admin/login");
+    // atau kalau mau pakai react-router:
+    // nav("/admin/login", { replace: true });
+  } catch (e) {
+    // fallback kalau ada error saat logout: tetap paksa ke admin login
+    window.location.replace("/admin/login");
+  }
+};
+
+
   const toggleFlag = async (id: string, newFlag: boolean) => {
     const token = localStorage.getItem("authToken");
     const config = { headers: { Authorization: `Bearer ${token}` } };

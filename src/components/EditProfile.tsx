@@ -12,12 +12,14 @@ const EditProfile = () => {
   const [formData, setFormData] = useState({
     userId: userId,
     name: "",
+    sapaan: "",
     email: email,
     hp: "",
     birthdate: "",
     sex: "",
   });
 
+  const [sapaanTouched, setSapaanTouched] = useState(false); // <-- NEW
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +32,7 @@ const EditProfile = () => {
         setFormData({
           userId: user._id,
           name: user.name || "",
+          sapaan: user.sapaan || user.name || "", // <-- NEW
           email: user.email || "",
           hp: user.hp || "",
           birthdate: user.birthdate ? user.birthdate.slice(0, 10) : "",
@@ -39,6 +42,7 @@ const EditProfile = () => {
         setFormData({
           userId: userId,
           name: localStorage.getItem("name") || "",
+          sapaan: localStorage.getItem("sapaan") || localStorage.getItem("name") || "", // <-- NEW
           email: email,
           hp: localStorage.getItem("hp") || "",
           birthdate: localStorage.getItem("birthdate") || "",
@@ -62,11 +66,29 @@ const EditProfile = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+
+      // Auto-fill sapaan saat name diubah (kalau sapaan belum disentuh user)
+      if (name === "name" && !sapaanTouched) {
+        if (!prev.sapaan || prev.sapaan === prev.name) {
+          next.sapaan = value;
+        }
+      }
+      return next;
+    });
+
+    if (name === "sapaan") setSapaanTouched(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.name || !formData.sapaan) {
+      toast.error("Nama Lengkap dan Nama Sapaan wajib diisi.");
+      return;
+    }
 
     const token = localStorage.getItem("authToken");
     if (!token) {
@@ -86,11 +108,24 @@ const EditProfile = () => {
         }
       );
       const updatedUser = response.data.user;
+
       localStorage.setItem("name", updatedUser.name);
+      localStorage.setItem(
+        "sapaan",
+        formData.sapaan || updatedUser.sapaan || updatedUser.name || ""
+      );
+
+
       localStorage.setItem("hp", updatedUser.hp || "");
       localStorage.setItem("birthdate", updatedUser.birthdate || "");
       localStorage.setItem("sex", updatedUser.sex || "");
       toast.success("Profil berhasil diperbarui!");
+
+      /// beri tahu Home agar refresh sapaan
+      window.dispatchEvent(new Event("teta:profile-updated"));
+      // balik ke halaman sebelumnya (Home)
+      navigate(-1); // atau navigate("/home", { replace: true })
+
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Terjadi kesalahan saat memperbarui profil");
@@ -177,6 +212,26 @@ const EditProfile = () => {
                     className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-400 text-sm"
                   />
                 </div>
+
+                {/* Nama Sapaan (wajib) */}
+                <div className="space-y-1">
+                  <label className="flex items-center text-xs font-semibold text-gray-700">
+                    <svg className="w-3 h-3 mr-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3z" />
+                    </svg>
+                    Nama Sapaan
+                  </label>
+                  <input
+                    type="text"
+                    name="sapaan"
+                    placeholder="Nama sapaan kamu"
+                    value={formData.sapaan}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-400 text-sm"
+                  />
+                </div>
+
                 {/* Email */}
                 <div className="space-y-1">
                   <label className="flex items-center text-xs font-semibold text-gray-700">
@@ -250,6 +305,7 @@ const EditProfile = () => {
                 </div>
                 {/* Birthdate & Gender */}
                 <div className="grid grid-cols-2 gap-3">
+                  {/* Birthdate */}
                   <div className="space-y-1">
                     <label className="flex items-center text-xs font-semibold text-gray-700">
                       <svg
@@ -272,10 +328,75 @@ const EditProfile = () => {
                       name="birthdate"
                       value={formData.birthdate}
                       onChange={handleInputChange}
+                      // min = 25 tahun lalu, max = 12 tahun lalu 
+                      min={new Date(
+                        new Date().getFullYear() - 25,
+                        new Date().getMonth(),
+                        new Date().getDate()
+                      )
+                        .toISOString()
+                        .split("T")[0]}
                       max={maxDate}
+                      // tandai invalid bila di luar 12–25th
+                      aria-invalid={(() => {
+                        if (!formData.birthdate) return undefined;
+                        const [y, m, d] = formData.birthdate
+                          .split("-")
+                          .map(Number);
+                        const birth = new Date(y, (m || 1) - 1, d || 1);
+                        if (isNaN(birth.getTime())) return true;
+                        const today = new Date();
+                        let age =
+                          today.getFullYear() - birth.getFullYear();
+                        const mo =
+                          today.getMonth() - birth.getMonth();
+                        if (
+                          mo < 0 ||
+                          (mo === 0 &&
+                            today.getDate() < birth.getDate())
+                        )
+                          age--;
+                        return age < 12 || age > 25
+                          ? true
+                          : undefined;
+                      })()}
                       className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 text-sm"
                     />
+
+                    {/* Pesan error inline bila tidak sesuai umur */}
+                    {(() => {
+                      if (!formData.birthdate) return null;
+                      const [y, m, d] = formData.birthdate
+                        .split("-")
+                        .map(Number);
+                      const birth = new Date(y, (m || 1) - 1, d || 1);
+                      if (isNaN(birth.getTime()))
+                        return (
+                          <p className="text-red-600 text-xs mt-1">
+                            Format tanggal tidak valid.
+                          </p>
+                        );
+                      const today = new Date();
+                      let age = today.getFullYear() - birth.getFullYear();
+                      const mo =
+                        today.getMonth() - birth.getMonth();
+                      if (
+                        mo < 0 ||
+                        (mo === 0 && today.getDate() < birth.getDate())
+                      )
+                        age--;
+                      if (age < 12 || age > 25) {
+                        return (
+                          <p className="text-red-600 text-xs mt-1">
+                            Maaf anda harus berumur 12–25 tahun.
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
+
+                  {/* Gender */}
                   <div className="space-y-1">
                     <label className="flex items-center text-xs font-semibold text-gray-700">
                       <svg
@@ -352,8 +473,8 @@ const EditProfile = () => {
             </div>
           </form>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

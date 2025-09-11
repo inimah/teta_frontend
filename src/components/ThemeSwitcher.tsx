@@ -14,12 +14,11 @@ const ThemeSwitcher: React.FC = () => {
 
   const handleThemeChange = (theme: string) => {
     localStorage.setItem("theme", theme);
-    setCurrentTheme(theme); // update state agar tombol langsung berubah
+    setCurrentTheme(theme);
     applyTheme(theme);
   };
 
   React.useEffect(() => {
-    // Set default theme to netral if not set
     if (!localStorage.getItem("theme")) {
       localStorage.setItem("theme", "netral");
       setCurrentTheme("netral");
@@ -27,22 +26,40 @@ const ThemeSwitcher: React.FC = () => {
     } else {
       applyTheme(currentTheme);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="fixed bottom-3 right-3 z-50 flex gap-2 bg-white rounded-full shadow-lg px-2 py-1">
-      {themes.map((t) => (
-        <button
-          key={t.value}
-          className={`text-xl  rounded-full transition ${
-            currentTheme === t.value ? "bg-blue-100 scale-110 shadow" : ""
-          }`}
-          onClick={() => handleThemeChange(t.value)}
-          aria-label={`Tema ${t.name}`}
-        >
-          {t.icon}
-        </button>
-      ))}
+    <div
+      className="fixed bottom-3 right-3 z-50 flex gap-2 rounded-full shadow-lg px-2 py-1 backdrop-blur-md border"
+      // Pakai CSS variables + fallback supaya adaptif di semua tema
+      style={{
+        background: "var(--surface, rgba(255,255,255,0.85))",
+        borderColor: "var(--border, rgba(0,0,0,0.08))",
+        color: "var(--text, #2d2d2d)",
+      }}
+    >
+      {themes.map((t) => {
+        const isActive = currentTheme === t.value;
+        return (
+          <button
+            key={t.value}
+            className={`text-xl rounded-full transition p-1`}
+            onClick={() => handleThemeChange(t.value)}
+            aria-label={`Tema ${t.name}`}
+            // Selected state juga adaptif
+            style={{
+              background: isActive
+                ? "var(--accent-bg, rgba(59,130,246,0.15))"
+                : "transparent",
+              boxShadow: isActive ? "0 0 0 2px var(--accent-ring, rgba(59,130,246,0.35)) inset" : "none",
+              transform: isActive ? "scale(1.08)" : "none",
+            }}
+          >
+            {t.icon}
+          </button>
+        );
+      })}
     </div>
   );
 };

@@ -13,12 +13,30 @@ type Question = {
 const Pertanyaan: React.FC = () => {
   const navigate = useNavigate();
   const [name, setName] = useState<string>("");
+  const [sapaan, setSapaan] = useState<string>("");
   const [guestName, setGuestName] = useState<string>("Guest");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false);
   const [selectedAnswers, setSelectedAnswers] = useState<{
     [key: number]: string;
   }>({});
+  const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+  const totalQuestions = questions.length;
+
+  const goPrev = () => setCurrentQuestion((c) => Math.max(0, c - 1));
+  const goNext = () => {
+    if (currentQuestion < totalQuestions - 1) {
+      setCurrentQuestion((c) => c + 1);
+    } else {
+      // last question => submit
+      handleSubmit();
+    }
+  };
+
+  const hasAnswerForCurrent =
+    selectedAnswers[currentQuestion] !== undefined &&
+    selectedAnswers[currentQuestion] !== null &&
+    selectedAnswers[currentQuestion] !== "";
 
   const handleAnswerChange = (questionIndex: number, answer: string) => {
     setSelectedAnswers((prev) => ({
@@ -43,7 +61,7 @@ const Pertanyaan: React.FC = () => {
         .then((response) => {
           if (response.data.status) {
             const userFromResponse = response.data.user;
-            setName(userFromResponse?.name || "");
+            setSapaan(userFromResponse?.sapaan || "");
             localStorage.setItem("userId", userFromResponse._id);
           } else {
             navigate("/");
@@ -140,7 +158,7 @@ const Pertanyaan: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-600">
-                    Hai, {name || guestName}
+                    Hai, {sapaan || guestName}
                   </h2>
                   <p className="text-gray-500 mt-1">
                     Selamat datang di evaluasi kesehatan mental
@@ -173,7 +191,7 @@ const Pertanyaan: React.FC = () => {
               </div>
 
               {/* Questions */}
-              <div className="space-y-2 mb-4">
+              {/* <div className="space-y-2 mb-4">
                 {questions.map((question, index) => (
                   <div key={index} className="group">
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
@@ -193,11 +211,10 @@ const Pertanyaan: React.FC = () => {
                           {question.options.map((option, optionIndex) => (
                             <label
                               key={optionIndex}
-                              className={`w-1/3 group/option flex text-xs text-gray-600 items-center p-2 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${
-                                selectedAnswers[index] === option
+                              className={`w-1/3 group/option flex text-xs text-gray-600 items-center p-2 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${selectedAnswers[index] === option
                                   ? "option-selected shadow-lg"
                                   : "option-default hover:option-default:hover"
-                              }`}
+                                }`}
                             >
                               <input
                                 type="radio"
@@ -210,29 +227,26 @@ const Pertanyaan: React.FC = () => {
                                 className="sr-only"
                               />
                               <div
-                                className={`relative w-5 h-5 rounded-full border-2 mr-2 flex items-center justify-center transition-all duration-300 ${
-                                  selectedAnswers[index] === option
+                                className={`relative w-5 h-5 rounded-full border-2 mr-2 flex items-center justify-center transition-all duration-300 ${selectedAnswers[index] === option
                                     ? "radio-selected shadow-lg"
                                     : "radio-default group-hover/option:radio-default:hover"
-                                }`}
+                                  }`}
                               >
                                 {selectedAnswers[index] === option && (
                                   <div className="w-2 h-2 bg-white rounded-full animate-scale-in"></div>
                                 )}
                                 <div
-                                  className={`absolute inset-0 rounded-full transition-all duration-300 ${
-                                    selectedAnswers[index] === option
+                                  className={`absolute inset-0 rounded-full transition-all duration-300 ${selectedAnswers[index] === option
                                       ? "radio-ring"
                                       : ""
-                                  }`}
+                                    }`}
                                 ></div>
                               </div>
                               <span
-                                className={`font-medium transition-colors duration-200 ${
-                                  selectedAnswers[index] === option
+                                className={`font-medium transition-colors duration-200 ${selectedAnswers[index] === option
                                     ? "text-accent"
                                     : "text-neutral group-hover/option:text-accent"
-                                }`}
+                                  }`}
                               >
                                 {option}
                               </span>
@@ -243,10 +257,82 @@ const Pertanyaan: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div> */}
+
+              {/* Questions (single, paged) */}
+              <div className="mb-4">
+                {/* Progress bar */}
+                {totalQuestions > 0 && (
+                  <div className="mb-4">
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
+                        style={{ width: `${((currentQuestion + 1) / totalQuestions) * 100}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Pertanyaan {currentQuestion + 1} dari {totalQuestions}
+                    </div>
+                  </div>
+                )}
+
+                {totalQuestions > 0 && (
+                  <div className="group">
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                      <div className="bg-question-header px-3 py-1 border-b">
+                        <h3 className="font-medium text-sm text-neutral-800 flex items-center gap-4">
+                          <div className="flex-shrink-0 w-6 h-6 icon-container-number text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                            {currentQuestion + 1}
+                          </div>
+                          <span className="inline-block">
+                            {questions[currentQuestion].question}
+                          </span>
+                        </h3>
+                      </div>
+
+                      <div className="p-6">
+                        <div className="flex flex-wrap gap-2">
+                          {questions[currentQuestion].options.map((option, optionIndex) => {
+                            const checked = selectedAnswers[currentQuestion] === option;
+                            return (
+                              <label
+                                key={optionIndex}
+                                className={`w-full sm:w-1/2 lg:w-1/3 group/option flex text-xs text-gray-600 items-center p-2 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${checked ? "option-selected shadow-lg" : "option-default"
+                                  }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`question-${currentQuestion}`}
+                                  value={option}
+                                  checked={checked}
+                                  onChange={() => handleAnswerChange(currentQuestion, option)}
+                                  className="sr-only"
+                                />
+                                <div
+                                  className={`relative w-5 h-5 rounded-full border-2 mr-2 flex items-center justify-center transition-all duration-300 ${checked ? "radio-selected shadow-lg" : "radio-default"
+                                    }`}
+                                >
+                                  {checked && (
+                                    <div className="w-2 h-2 bg-white rounded-full animate-scale-in" />
+                                  )}
+                                  <div className={`absolute inset-0 rounded-full ${checked ? "radio-ring" : ""}`} />
+                                </div>
+                                <span className={`font-medium ${checked ? "text-accent" : "text-neutral"}`}>
+                                  {option}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
+
               {/* Action Buttons */}
-              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+              {/* <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                 <button onClick={handleBackToMenu}>
                   <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
                 </button>
@@ -259,7 +345,43 @@ const Pertanyaan: React.FC = () => {
                   <CheckCircle className="h-5 w-5 relative z-10" />
                   <span className="relative z-10">Submit Jawaban</span>
                 </button>
+              </div> */}
+
+              {/* Action Buttons (paged nav) */}
+              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                {/* Back to menu (left) */}
+                <button onClick={handleBackToMenu} className="p-2 rounded-xl hover:bg-gray-50">
+                  <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                </button>
+
+                {/* Prev / Next (right) */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={goPrev}
+                    disabled={currentQuestion === 0}
+                    className={`px-4 py-2 rounded-xl border transition ${currentQuestion === 0
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-gray-50"
+                      }`}
+                  >
+                    Sebelumnya
+                  </button>
+
+                  <button
+                    onClick={goNext}
+                    disabled={!hasAnswerForCurrent}
+                    className={`group flex items-center gap-3 bg-button-primary-gradient hover:bg-button-primary-gradient:hover text-white font-semibold py-2 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 relative overflow-hidden ${!hasAnswerForCurrent ? "opacity-60 cursor-not-allowed" : ""
+                      }`}
+                  >
+                    <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                    <CheckCircle className="h-5 w-5 relative z-10" />
+                    <span className="relative z-10">
+                      {currentQuestion < totalQuestions - 1 ? "Berikutnya" : "Kirim Jawaban"}
+                    </span>
+                  </button>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
