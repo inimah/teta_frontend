@@ -149,7 +149,8 @@ const Eksplorasi: React.FC = () => {
             <div className="w-full bg-white rounded-xl shadow-md p-6 eksplorasi-content-box">
               <h3 className="text-lg font-semibold mb-2 text-center">Tentang TETA</h3>
               <p className="text-sm text-gray-600 leading-relaxed text-center">
-                TETA (Teman Cerita) adalah aplikasi pendamping yang siap menemani kamu berbagi cerita kapan saja. TETA mendengarkan tanpa menghakimi agar kamu merasa lebih lega dengan beberapa fitur yang tersedia.
+                TETA – Teman Cerita adalah ruang aman tempat setiap suara didengar tanpa rasa takut dihakimi. Terinspirasi dari gelombang teta yang menenangkan, TETA hadir sebagai sahabat yang selalu siap mendampingi, memberi kehangatan, dan menghadirkan ketenangan di tengah riuh pikiran. Di sini, setiap cerita bernilai, setiap rasa dihargai, dan setiap hati berhak menemukan damai.
+                {/* TETA (Teman Cerita) adalah aplikasi pendamping yang siap menemani kamu berbagi cerita kapan saja. TETA mendengarkan tanpa menghakimi agar kamu merasa lebih lega dengan beberapa fitur yang tersedia. */}
               </p>
             </div>
 

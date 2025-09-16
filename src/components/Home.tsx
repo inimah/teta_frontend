@@ -5,6 +5,8 @@ import { UserAuth } from "../context/AuthContext";
 import { UserIcon } from "@heroicons/react/24/solid";
 import { applyTheme } from "../themes/applyTheme";
 import { toast } from "react-toastify";
+import TetaIcon from "./TetaIcon";
+import * as XLSX from "xlsx";
 
 interface Message {
   id: string | number;
@@ -82,6 +84,51 @@ const Home: React.FC = (): React.ReactElement => {
   const [isBotTyping, setIsBotTyping] = useState(false);
 
   // helper
+
+  const handleExportToXLS = (sessionId: string) => {
+    const session = chatHistory.find((chat) => chat.sessionId === sessionId);
+    if (!session) {
+      alert("Sesi chat tidak ditemukan.");
+      return;
+    }
+
+    // Prepare data rows: pair user and bot messages
+    const rows: Array<{ text_user: string; text_chatbot: string; koreksi: string; komentar: string }> = [];
+    let userMsg = "";
+    let botMsg = "";
+
+    session.messages.forEach((msg) => {
+      if (msg.isUser) {
+        if (userMsg || botMsg) {
+          rows.push({ text_user: userMsg, text_chatbot: botMsg, koreksi: "", komentar: "" });
+          botMsg = "";
+        }
+        userMsg = msg.text;
+      } else {
+        botMsg = msg.text;
+      }
+    });
+    // Push last pair
+    if (userMsg || botMsg) {
+      rows.push({ text_user: userMsg, text_chatbot: botMsg, koreksi: "", komentar: "" });
+    }
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Chat");
+
+    // Add table to the worksheet
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    const tableRef = XLSX.utils.encode_range(range);
+    ws['!autofilter'] = { ref: tableRef };
+    ws['!tables'] = [{ name: 'ChatTable', ref: tableRef, headerRow: true }];
+
+    // Save file
+    XLSX.writeFile(wb, `${session.title || "chat-session"}.xlsx`);
+  };
   const firstWord = (s?: string) => (s || "").trim().split(/\s+/)[0] || "";
 
   const getDisplayName = (user: { sapaan?: string; name?: string } | null) => {
@@ -437,7 +484,7 @@ const Home: React.FC = (): React.ReactElement => {
       //   userId: localStorage.getItem("userId"),
       // });
 
-      const response = await axios.post("http://localhost:8000/api/hf/chat", {
+      const response = await axios.post("http://localhost:5006/chat", {
         messages: allMessages,
         sessionId: sid,
         userId: localStorage.getItem("userId"),
@@ -638,11 +685,9 @@ const Home: React.FC = (): React.ReactElement => {
         >
           {/* Header */}
           <div className="px-4 py-3 chat-sidebar flex flex-col items-center justify-center">
-            <img
-              src="/Teta_girl.png"
+            <TetaIcon
+              className="h-30 w-30 object-contain mb-2"
               alt="TETA"
-              className="h-24 w-24 object-contain mb-2"
-              style={{ display: "block" }}
             />
           </div>
 
@@ -651,12 +696,12 @@ const Home: React.FC = (): React.ReactElement => {
               <div className="grid grid-cols-1 gap-1 mt-2">
                 {/* Eksplorasi */}
                 <div
-                  className={`group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Eksplorasi" ? " shadow-md" : " hover:shadow-sm"
+                  className={`group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center hover:scale-[1.02] nav-menu-item ${currentCategory === "Eksplorasi" ? " shadow-md" : " hover:shadow-sm"
                     }`}
                   onClick={() => navigate("/eksplorasi")}
                 >
                   <div className="h-8 w-8 mr-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 nav-menu-item-icon-special" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                     </svg>
                   </div>
@@ -665,11 +710,11 @@ const Home: React.FC = (): React.ReactElement => {
 
                 {/* Cek Kondisi Hatimu */}
                 <div
-                  className="group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center  hover:scale-[1.02] hover:shadow-sm"
+                  className="group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center nav-menu-item hover:scale-[1.02] hover:shadow-sm"
                   onClick={() => navigate("/pertanyaan")}
                 >
                   <div className="h-8 w-8 mr-3  rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 nav-menu-item-icon-special" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -701,32 +746,14 @@ const Home: React.FC = (): React.ReactElement => {
 
               {/* Riwayat Chat */}
               <div className="flex items-center py-3">
-                <div className="chat-riwayat-text"></div>
-                <h3 className="chat-riwayat-label">Riwayat Chat</h3>
-                <div className="chat-riwayat-text"></div>
+                <h3 className="chat-riwayat-label flex items-center space-x-2 text-lg font-semibold">
+                  <span>Riwayat Chat</span>
+                </h3>
               </div>
 
               {/* Hanya sesi yang sudah berisi pesan yang tampil (karena kita tidak pernah push sesi kosong) */}
-              <div className="space-y-1">
-                <div
-                  className={`cursor-pointer py-2 px-3 rounded-lg transition-all duration-300 flex items-center group hover:scale-[1.01] ${currentCategory === "Hari ini"
-                    ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-gray-700 border border-blue-100 shadow-sm"
-                    : "hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 text-gray-600"
-                    }`}
-                  onClick={() => handleCategoryClick("Hari ini")}
-                >
-                  <div className="h-6 w-6 mr-2 bg-blue-100 rounded-md flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-medium">Hari ini</span>
-                  <div className="ml-auto">
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${currentCategory === "Hari ini" ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
+              <div className="space-y-1 max-h-[calc(90vh-200px)]" style={{ overflowY: activeDropdown ? 'visible' : 'auto' }}>
+
 
                 {currentCategory === "Hari ini" && (
                   <div className="ml-4 mt-0.5 ">
@@ -736,16 +763,20 @@ const Home: React.FC = (): React.ReactElement => {
                         className="py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between hover:bg-gray-50 t text-gray-600 group"
                       >
                         <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
-                          <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                            </svg>
-                          </div>
+                            <div className="h-5 w-5 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-3 8a9 9 0 110-18 9 9 0 010 18z" />
+                              </svg>
+                            </div>
                           <div
                             className="truncate text-xs flex-1"
                             onDoubleClick={() => {
                               setEditingSessionId(chat.sessionId);
                               setEditingTitle(chat.title || "");
+                            }}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setActiveDropdown(chat.sessionId);
                             }}
                           >
                             {editingSessionId === chat.sessionId ? (
@@ -788,7 +819,7 @@ const Home: React.FC = (): React.ReactElement => {
                           </div>
 
                           {activeDropdown === chat.sessionId && (
-                            <div ref={dropdownRef} className="absolute right-0 mt-1 w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                            <div ref={dropdownRef} className={`absolute right-0 ${index === (showAllTodayChats ? chatHistory : chatHistory.slice(0, 5)).length - 1 ? 'bottom-0 mb-1' : 'mt-1'} w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden`}>
                               <div
                                 className="px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
                                 onClick={() => {
@@ -813,6 +844,19 @@ const Home: React.FC = (): React.ReactElement => {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                                 Delete
+                              </div>
+                              <div
+                                className="px-2 py-1.5 text-xs text-green-600 hover:bg-green-50 cursor-pointer transition-colors flex items-center"
+                                onClick={() => {
+                                  setActiveDropdown(null);
+                                  handleExportToXLS(chat.sessionId);
+                                }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2z" />
+                                  <path d="M7 12h10M7 16h10M7 8h10" />
+                                </svg>
+                                Export XLS
                               </div>
                             </div>
                           )}
@@ -873,6 +917,10 @@ const Home: React.FC = (): React.ReactElement => {
                                 setEditingSessionId(chat.sessionId);
                                 setEditingTitle(chat.title || "");
                               }}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setActiveDropdown(chat.sessionId);
+                              }}
                             >
                               {editingSessionId === chat.sessionId ? (
                                 <input
@@ -912,7 +960,7 @@ const Home: React.FC = (): React.ReactElement => {
                               </svg>
                             </div>
                             {activeDropdown === chat.sessionId && (
-                              <div className="absolute right-0 mt-1 w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                              <div className={`absolute right-0 ${index === sevenDaysChats.length - 1 ? 'bottom-0 mb-1' : 'mt-1'} w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden`}>
                                 <div
                                   className="px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors"
                                   onClick={() => {
@@ -981,6 +1029,10 @@ const Home: React.FC = (): React.ReactElement => {
                                 setEditingSessionId(chat.sessionId);
                                 setEditingTitle(chat.title || "");
                               }}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setActiveDropdown(chat.sessionId);
+                              }}
                             >
                               {editingSessionId === chat.sessionId ? (
                                 <input
@@ -1021,7 +1073,7 @@ const Home: React.FC = (): React.ReactElement => {
                             </div>
 
                             {activeDropdown === chat.sessionId && (
-                              <div className="absolute right-0 mt-1 w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                              <div className={`absolute right-0 ${index === thirtyDaysChats.length - 1 ? 'bottom-0 mb-1' : 'mt-1'} w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden`}>
                                 <div
                                   className="px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
                                   onClick={() => {

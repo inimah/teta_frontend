@@ -6,6 +6,7 @@ import {
   BoltIcon,
   PauseIcon,
   PlayIcon,
+  SpeakerWaveIcon,
 } from "@heroicons/react/24/outline";
 import "../themes/flower.css";
 
@@ -110,7 +111,7 @@ export default function PanduanPernapasan() {
   // UX: countdown 3-2-1 sebelum mulai
   const [prestart, setPrestart] = useState<number | null>(null);
   // UX: voice coaching opsional
-  const [voiceOn, setVoiceOn] = useState<boolean>(false);
+  const [voiceOn, setVoiceOn] = useState<boolean>(true);
 
   /** ---------- STATE BACKSOUND (baru) ---------- */
   const bgAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -239,6 +240,7 @@ export default function PanduanPernapasan() {
     try {
       window.speechSynthesis?.cancel();
       const u = new SpeechSynthesisUtterance(stageLabel);
+      u.lang = "id-ID"; // Set Indonesian language accent
       u.rate = 0.9;
       window.speechSynthesis?.speak(u);
     } catch { /* ignore */ }
@@ -275,7 +277,7 @@ export default function PanduanPernapasan() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-theme-background">
-      <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl tips-main-card flex flex-col h-[90vh] overflow-hidden">
+      <div className="w-full max-w-5xl mx-auto rounded-3xl tips-main-card flex flex-col h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="relative flex items-center w-full px-4" style={{ minHeight: 70 }}>
           <button
@@ -286,16 +288,13 @@ export default function PanduanPernapasan() {
           >
             <ChevronLeftIcon className="h-7 w-7 eksplorasi-back-icon" />
           </button>
-          <h2 className="w-full text-2xl font-bold text-center tips-title py-4">
+          <h2 className="w-full text-3xl font-bold text-center tips-title py-4">
             Panduan Pernapasan
           </h2>
         </div>
         <hr className="border-t border-gray-200 mb-6" />
 
-        {/* Panel putih solid */}
-        <div className="tips-scrollable-content px-6">
-          <div className="w-full bg-white rounded-xl shadow-2xl ring-1 ring-gray-200 eksplorasi-content-box p-4 md:p-6">
-            <div className="grid md:grid-cols-[1fr_320px] gap-8 items-center">
+        <div className="grid md:grid-cols-[1fr_400px] gap-6 items-center p-4 md:p-6">
               {/* LEFT: ring + animasi + kontrol */}
               <div className="flex flex-col items-center">
                 <div className="relative grid place-items-center">
@@ -373,70 +372,66 @@ export default function PanduanPernapasan() {
                 </div>
 
                 {/* Durasi, voice, dan BACKSOUND controls */}
-                <div className="mt-5 w-full max-w-sm space-y-3">
-                  <div className="text-sm text-gray-700">Durasi: {Math.round(length / 60)} menit</div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <button
-                      className="px-2 py-1 rounded-full bg-white ring-1 ring-gray-200 hover:bg-gray-50"
-                      onClick={() => setLength((l) => Math.max(60, l - 60))}
-                    >
-                      -1
-                    </button>
-                    <button
-                      className="px-2 py-1 rounded-full bg-white ring-1 ring-gray-200 hover:bg-gray-50"
-                      onClick={() => setLength((l) => l + 60)}
-                    >
-                      +1
-                    </button>
-
-                    <label className="ml-3 inline-flex items-center gap-2 text-xs text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={voiceOn}
-                        onChange={(e) => setVoiceOn(e.target.checked)}
-                      />
-                      Panduan suara
-                    </label>
-                  </div>
-
-                  {/* BACKSOUND UI (baru) */}
-                  <div className="pt-2 border-t border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={bgOn}
-                          onChange={(e) => setBgOn(e.target.checked)}
-                        />
-                        Musik latar saat sesi
-                      </label>
-                      <span className="text-xs text-gray-400">geser pilihan ▶︎</span>
+                <div className="mt-5 w-full max-w-sm space-y-3 text-sm text-gray-700">
+                  <div className="flex items-center gap-3">
+                    <span>Durasi: {Math.round(length / 60)} menit</span>
+                    <button className="px-2 py-1 rounded-full bg-white/80 ring-1 ring-white hover:bg-white" onClick={() => setLength((l) => Math.max(60, l - 60))}>-1</button>
+                    <button className="px-2 py-1 rounded-full bg-white/80 ring-1 ring-white hover:bg-white" onClick={() => setLength((l) => l + 60)}>+1</button>
                     </div>
+ 
+ 
+                   {/* BACKSOUND UI (baru) */}
+                   <div className="pt-2 border-t border-gray-100">
+                     <div className="flex items-center justify-between">
+                       <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                         <input
+                           type="checkbox"
+                           checked={voiceOn}
+                           onChange={(e) => setVoiceOn(e.target.checked)}
+                         />
+                         Panduan suara
+                       </label>
+                     </div>
+                     <div className="flex items-center justify-between mt-2">
+                       <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                         <input
+                           type="checkbox"
+                           checked={bgOn}
+                           onChange={(e) => setBgOn(e.target.checked)}
+                         />
+                         Musik latar saat sesi
+                       </label>
+
+                     </div>
+
+                     <div className={`mt-2 flex gap-2 overflow-x-auto pb-1 ${bgOn ? "" : "opacity-50 pointer-events-none"}`}>
+                       {BG_PLAYLIST.map((t, i) => (
+                         <button
+                           key={t.id}
+                           onClick={() => {
+                             setBgTrack(i);
+                             try { if (bgAudioRef.current) bgAudioRef.current.currentTime = 0; } catch {}
+                           }}
+                           className={`shrink-0 rounded-full px-3 py-1.5 text-xs ring-1 transition
+                             ${i === bgTrack ? "bg-teal-900 text-white ring-gray-900" : "bg-white text-gray-700 ring-gray-200 hover:bg-gray-50"}`}
+                           aria-label={`Pilih musik ${t.title}`}
+                         >
+                           {t.title}
+                         </button>
+                       ))}
+                     </div>
 
                     <div className={`mt-2 ${bgOn ? "" : "opacity-50 pointer-events-none"}`}>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={bgVolume}
-                        onChange={(e) => setBgVolume(Number(e.target.value))}
-                        className="w-full"
-                      />
-                      <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                        {BG_PLAYLIST.map((t, i) => (
-                          <button
-                            key={t.id}
-                            onClick={() => {
-                              setBgTrack(i);
-                              try { if (bgAudioRef.current) bgAudioRef.current.currentTime = 0; } catch {}
-                            }}
-                            className={`shrink-0 rounded-full px-3 py-1.5 text-xs ring-1 transition
-                              ${i === bgTrack ? "bg-teal-900 text-white ring-gray-900" : "bg-white text-gray-700 ring-gray-200 hover:bg-gray-50"}`}
-                            aria-label={`Pilih musik ${t.title}`}
-                          >
-                            {t.title}
-                          </button>
-                        ))}
+                      <div className="flex items-center gap-2">
+                        <SpeakerWaveIcon className="h-4 w-4 text-gray-500" />
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={bgVolume}
+                          onChange={(e) => setBgVolume(Number(e.target.value))}
+                          className="w-full"
+                        />
                       </div>
                     </div>
                   </div>
@@ -444,28 +439,28 @@ export default function PanduanPernapasan() {
               </div>
 
               {/* RIGHT: detail & instruksi */}
-              <div className="rounded-2xl detail-bg ring-1 ring-gray-100 p-5">
+              <div className="detail-bg p-5 ml-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className={`${COLOR_BADGE[selected.color]} p-3 rounded-full`}>
                     {selected.icon === "heart" && <HeartIcon className="h-6 w-6 eksplorasi-icon" />}
                     {selected.icon === "bolt" && <BoltIcon className="h-6 w-6 eksplorasi-icon" />}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold detail-title">{selected.title}</h3>
-                    <p className="text-sm detail-kat-text">{selected.description}</p>
+                  <h3 className="text-xl font-semibold detail-title">{selected.title}</h3>
+                  <p className="text-base detail-kat-text">{selected.description}</p>
                   </div>
                 </div>
 
                 {/* ——— Per-teknik: manfaat & cara ——— */}
                 {selected.id === "478" && (
-                  <div className="mt-3 text-[13px] leading-relaxed flower-content text-justify">
-                    <p className="font-medium mb-1">Manfaat utama</p>
+                  <div className="mt-3 text-sm leading-loose flower-content text-justify">
+                    {/* <p className="font-medium mb-1">Manfaat utama</p>
                     <ul className="list-disc pl-5 space-y-1 mb-3">
                       <li>Menurunkan ketegangan saraf dengan memperpanjang hembusan.</li>
                       <li>Membantu tidur & meredakan cemas akut.</li>
                       <li>Baik sebagai <i>emergency calmer</i> 2–4 menit.</li>
-                    </ul>
-                    <p className="font-medium mb-1">Cara singkat</p>
+                    </ul> */}
+                    {/* <p className="font-medium mb-1">Cara singkat</p> */}
                     <ol className="list-decimal pl-5 space-y-1">
                       <li>Duduk nyaman. Tarik lewat hidung 4 detik.</li>
                       <li>Tahan napas 7 detik (lembut, jangan menegang).</li>
@@ -476,14 +471,14 @@ export default function PanduanPernapasan() {
                 )}
 
                 {selected.id === "box" && (
-                  <div className="mt-3 text-[13px] leading-relaxed flower-content text-justify">
-                    <p className="font-medium mb-1">Manfaat utama</p>
+                  <div className="mt-3 text-sm leading-loose flower-content text-justify">
+                    {/* <p className="font-medium mb-1">Manfaat utama</p>
                     <ul className="list-disc pl-5 space-y-1 mb-3">
                       <li>Menstabilkan fokus & meningkatkan ketenangan sebelum aktivitas penting.</li>
                       <li>Melatih toleransi CO₂ secara ringan—membuat napas lebih efisien.</li>
                       <li>Cocok saat ingin “reset” pikiran singkat (2–5 menit).</li>
-                    </ul>
-                    <p className="font-medium mb-1">Cara singkat</p>
+                    </ul> */}
+                    {/* <p className="font-medium mb-1">Cara singkat</p> */}
                     <ol className="list-decimal pl-5 space-y-1">
                       <li>Tarik 4 detik, <b>tahan</b> 4 detik.</li>
                       <li>Hembuskan 4 detik, <b>tahan</b> 4 detik (paru paru netral).</li>
@@ -494,14 +489,14 @@ export default function PanduanPernapasan() {
                 )}
 
                 {selected.id === "coherent" && (
-                  <div className="mt-3 text-[13px] leading-relaxed flower-content text-justify">
-                    <p className="font-medium mb-1">Manfaat utama</p>
+                  <div className="mt-3 text-sm leading-loose flower-content text-justify">
+                    {/* <p className="font-medium mb-1">Manfaat utama</p>
                     <ul className="list-disc pl-5 space-y-1 mb-3">
                       <li>Menyeimbangkan sistem saraf (±6 napas/menit) & meningkatkan variabilitas detak jantung (HRV).</li>
                       <li>Memberi ketenangan stabil tanpa kantuk—enak untuk rutinitas harian.</li>
                       <li>Baik untuk pemulihan kelelahan mental.</li>
-                    </ul>
-                    <p className="font-medium mb-1">Cara singkat</p>
+                    </ul> */}
+                    {/* <p className="font-medium mb-1">Cara singkat</p> */}
                     <ol className="list-decimal pl-5 space-y-1">
                       <li>Tarik 5 detik lewat hidung, perut lembut mengembang.</li>
                       <li>Hembuskan 5 detik halus, tanpa menekan.</li>
@@ -512,14 +507,14 @@ export default function PanduanPernapasan() {
                 )}
 
                 {selected.id === "ex46" && (
-                  <div className="mt-3 text-[13px] leading-relaxed flower-content text-justify">
-                    <p className="font-medium mb-1">Manfaat utama</p>
+                  <div className="mt-3 text-sm leading-loose flower-content text-justify">
+                    {/* <p className="font-medium mb-1">Manfaat utama</p>
                     <ul className="list-disc pl-5 space-y-1 mb-3">
                       <li>Hembusan lebih panjang mengaktifkan saraf vagus → menenangkan emosi cepat.</li>
                       <li>Efektif saat gelisah/overthinking tanpa membuat sesak.</li>
                       <li>Transisi baik sebelum tidur atau setelah aktivitas intens.</li>
-                    </ul>
-                    <p className="font-medium mb-1">Cara singkat</p>
+                    </ul> */}
+                    {/* <p className="font-medium mb-1">Cara singkat</p> */}
                     <ol className="list-decimal pl-5 space-y-1">
                       <li>Tarik 4 detik lewat hidung.</li>
                       <li>Hembuskan 6 detik perlahan (bibir sedikit meruncing membantu).</li>
@@ -530,33 +525,33 @@ export default function PanduanPernapasan() {
                 )}
 
                 {/* Catatan umum singkat */}
-                <p className="mt-4 text-[11px] text-gray-500">
+                <p className="mt-4 text-xs text-red-500">
                   Catatan: hentikan bila pusing/nyeri dada. Latihan napas mendukung kenyamanan,
                   bukan pengganti bantuan medis.
                 </p>
               </div>
             </div>
 
-            {/* Chips teknik */}
-            <div className="mt-6 flex gap-3 overflow-x-auto pb-1">
-              {TECHNIQUES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setSelected(t)}
-                  className={`shrink-0 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm ring-1 transition ${
-                    selected.id === t.id
-                      ? "bg-teal-900 text-white ring-gray-900"
-                      : "bg-white text-gray-700 ring-gray-200 hover:bg-gray-50"
-                  }`}
-                  aria-label={`Pilih ${t.title}`}
-                >
-                  <span className={`${COLOR_BADGE[t.color]} rounded-full p-1.5`}></span>
-                  {t.title}
-                </button>
-              ))}
+            {/* Tabs teknik */}
+            <div className="mt-6 border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                {TECHNIQUES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelected(t)}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      selected.id === t.id
+                        ? "border-teal-900 text-teal-900"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                    aria-current={selected.id === t.id ? "page" : undefined}
+                    aria-label={`Pilih ${t.title}`}
+                  >
+                    {t.title}
+                  </button>
+                ))}
+              </nav>
             </div>
-          </div>
-        </div>
 
         {/* BACKSOUND audio element (baru) */}
         <audio

@@ -21,6 +21,9 @@ const Pertanyaan: React.FC = () => {
     [key: number]: string;
   }>({});
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+  const [totalScore, setTotalScore] = useState<number>(0);
+  const [condition, setCondition] = useState<string>("");
+  const [specialMessage, setSpecialMessage] = useState<string>("");
   const totalQuestions = questions.length;
 
   const goPrev = () => setCurrentQuestion((c) => Math.max(0, c - 1));
@@ -43,6 +46,44 @@ const Pertanyaan: React.FC = () => {
       ...prev,
       [questionIndex]: answer,
     }));
+  };
+
+  const calculateScore = () => {
+    let score = 0;
+    questions.forEach((question, index) => {
+      const answer = selectedAnswers[index];
+      if (answer) {
+        const optionIndex = question.options.indexOf(answer);
+        if (optionIndex !== -1) {
+          score += optionIndex;
+        }
+      }
+    });
+    setTotalScore(score);
+
+    let cond = "";
+    if (score <= 4) {
+      cond = "Kondisimu terlihat cukup stabil hari ini 😊";
+    } else if (score <= 9) {
+      cond = "Ada beberapa hal yang bikin kamu kepikiran 🌥️";
+    } else if (score <= 14) {
+      cond = "Sepertinya harimu cukup berat, yuk istirahat sejenak 🌀";
+    } else {
+      cond = "Kamu nggak sendiri. Cerita yuk, aku siap bantu kapan aja 🤝";
+    }
+    setCondition(cond);
+
+    // Check last question
+    const lastIndex = totalQuestions - 1;
+    const lastAnswer = selectedAnswers[lastIndex];
+    if (lastAnswer) {
+      const lastOptionIndex = questions[lastIndex].options.indexOf(lastAnswer);
+      if (lastOptionIndex >= 2) {
+        setSpecialMessage("Kamu penting dan berharga. Kalau kamu lagi merasa pengin nyakitin diri, coba tarik napas dulu. Aku sarankan untuk bicara dengan orang yang bisa dipercaya, atau hubungi bantuan profesional.");
+      } else {
+        setSpecialMessage("");
+      }
+    }
   };
 
   useEffect(() => {
@@ -88,6 +129,8 @@ const Pertanyaan: React.FC = () => {
   }, [navigate]);
 
   const handleSubmit = () => {
+    calculateScore();
+
     const token = localStorage.getItem("authToken");
 
     if (!token) {
@@ -265,10 +308,10 @@ const Pertanyaan: React.FC = () => {
                 {totalQuestions > 0 && (
                   <div className="mb-4">
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
-                        style={{ width: `${((currentQuestion + 1) / totalQuestions) * 100}%` }}
-                      />
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
+                      style={{ width: `${((currentQuestion + 1) / totalQuestions) * 100}%` }}
+                    />
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
                       Pertanyaan {currentQuestion + 1} dari {totalQuestions}
@@ -403,11 +446,26 @@ const Pertanyaan: React.FC = () => {
                   <h2 className="text-3xl font-bold text-neutral-800 mb-3">
                     Berhasil!
                   </h2>
-                  <p className="text-neutral-light mb-8 text-lg">
+                  <p className="text-neutral-light mb-4 text-lg">
                     Terima kasih telah mengisi kuesioner dengan jujur
                   </p>
+                  <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-indigo-600 mb-2">
+                        Skor Total: {totalScore}
+                      </div>
+                      <p className="text-neutral-700 mb-2">
+                        {condition}
+                      </p>
+                      {specialMessage && (
+                        <p className="text-red-600 text-sm mt-4 p-3 bg-red-50 rounded-lg">
+                          {specialMessage}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   <button
-                    className="w-full bg-success-gradient hover:bg-success-gradient:hover text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="w-full bg-success-gradient text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg"
                     onClick={handlePopupClose}
                   >
                     Lanjutkan

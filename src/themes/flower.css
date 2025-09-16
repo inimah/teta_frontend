@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&display=swap');
+
 /* fresh.css */
 
 /* 1. Warna dasar halaman */
@@ -28,7 +30,7 @@ body,
 /* 2. Sidebar */
 .chat-sidebar {
   background: #fff8f0 !important;
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins", "Inter", sans-serif !important;
   /* krem muda */
 }
 
@@ -43,12 +45,22 @@ body,
   background: #fff8f0 !important;
   color: #b88a3a;
   border-radius: 24px;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.02em !important;
 }
 .bubble-bot {
   background: #fff !important;
   color: #787276;
   border-radius: 24px;
   border: 1.5px solid #ffe0b2 !important;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.02em !important;
 }
 
 /* 6. Menu Sidebar */
@@ -74,15 +86,16 @@ body,
   background: linear-gradient(to right, transparent, #ffe0b2, transparent);
 }
 .chat-riwayat-label {
-  font-size: 0.75rem;
+  font-size: 1rem !important;
   text-transform: uppercase;
-  font-weight: bold;
+  font-weight: 600 !important;
   margin-left: 0.75rem;
   margin-right: 0.75rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 9999px;
 
   color: #696e71;
+  letter-spacing: 0.05em;
 }
 .login-google-btn {
   font-family: "Nunito", sans-serif;
@@ -313,8 +326,11 @@ body,
   background: #ffffe1 !important;
 }
 .chat-title {
-  font-family: "Caveat", cursive;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 1.5rem !important;
   color: #efc6a1 !important;
+  letter-spacing: 0.03em !important;
 }
 
 .chat-sidebar {
@@ -338,6 +354,7 @@ body,
 .text-greeting {
   color: #7dd3fc; /* biru soft (Tailwind: blue-600) */
   font-weight: 600;
+  font-family: "Poppins", "Inter", sans-serif !important;
 }
 
 .text-username {
@@ -746,10 +763,10 @@ body,
 .mood-btn {
   display: flex;
   align-items: center;
-  font-family: "Poppins", sans-serif;
-
-  font-weight: 500;
-  font-size: 14px; /* ukuran sedikit lebih kecil */
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.02em !important;
   color: #4b5563; /* abu-abu gelap (teks di gambar) */
   border: 1px solid #e5e7eb; /* abu netral sangat soft */
   background-color: #ffffff;
@@ -801,11 +818,17 @@ body,
 
 /* Soft Button Primary Gradient - Warna yang lebih lembut dan tidak terlalu kontras */
 .pertanyaan .bg-button-primary-gradient {
-  background: linear-gradient(135deg, #f0abfc 0%, #7dd3fc 50%, #fde68a 100%);
+  background: #bfa3d9; /* solid neutral purple */
 }
 
 .pertanyaan .bg-button-primary-gradient:hover {
-  background: linear-gradient(135deg, #e879f9 0%, #38bdf8 50%, #fcd34d 100%);
+  background: #a88bc1 !important; /* solid neutral purple, no hover effect */
+  transform: none !important;
+  transition: none !important;
+}
+
+.pertanyaan .bg-button-primary-gradient > .absolute.inset-0 {
+  display: none !important;
 }
 
 .pertanyaan .bg-success-gradient {
@@ -985,7 +1008,35 @@ body,
   border-radius: 24px;
 }
 
+.nav-menu-item {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%) !important;
+  /* border: 1.5px solid #f57c00 !important; */ /* removed border as per feedback */
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-weight: 600 !important;
+  color: #e65100 !important;
+  box-shadow: 0 2px 8px rgba(245, 124, 0, 0.2) !important;
+}
+
+.nav-menu-item-icon-special {
+  color: #f57c00 !important; /* distinct orange for icon */
+}
+
+.nav-menu-item:hover {
+  background: linear-gradient(135deg, #ffecb3 0%, #ffe082 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3) !important;
+}
+
 /* fav-theme.css */
+
+.chat-input-pesan input {
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.02em !important;
+  color: #b88a3a !important;
+}
 
 /* Warna background halaman */
 .fav-bg {

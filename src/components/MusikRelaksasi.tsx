@@ -36,39 +36,10 @@ type Technique = {
 
 // ---- Data ----
 const TECHNIQUES: Technique[] = [
-  // {
-  //   id: "478",
-  //   title: "Pernapasan 4-7-8",
-  //   description: "Teknik pernapasan sederhana untuk meredakan cemas.",
-  //   minutes: 4,
-  //   icon: "heart",
-  //   track: "/audio/calm-air.mp3",
-  //   pattern: [4, 7, 8],
-  //   stages: ["Tarik", "Tahan", "Hembuskan"],
-  //   color: "pink",
-  // },
-  // {
-  //   id: "mindfulness",
-  //   title: "Meditasi Mindfulness",
-  //   description: "Fokus pada momen kini; amati napas & sensasi tubuh.",
-  //   minutes: 5,
-  //   icon: "book",
-  //   track: "/audio/mindful-bell.mp3",
-  //   color: "yellow",
-  // },
-  // {
-  //   id: "pmr",
-  //   title: "Relaksasi Otot Progresif",
-  //   description: "Tegang-lepas otot bertahap dari kaki hingga wajah.",
-  //   minutes: 10,
-  //   icon: "bolt",
-  //   track: "/audio/body-scan.mp3",
-  //   color: "teal",
-  // },
   {
     id: "musik",
     title: "Musik Relaksasi",
-    description: "Dengarkan latar musik menenangkan saat jeda.",
+    description: "Dengarkan musik santai sambil mengistirahatkan mata sejenak.",
     minutes: 5,
     icon: "note",
     track: "/audio/soft-piano.mp3", // fallback jika playlist kosong
@@ -99,7 +70,7 @@ const RING_HEX: Record<Technique["color"], string> = {
   pink: "#ec4899",
   red: "#ef4444",
   teal: "#10b981",
-  green: "#22c55e",
+  green: "#89be9dff",
   blue: "#3b82f6",
 };
 
@@ -112,6 +83,7 @@ export default function Relaksasi() {
   const [params] = useSearchParams();
 
   const [selected, setSelected] = useState<Technique | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [playing, setPlaying] = useState(false);
@@ -128,8 +100,14 @@ export default function Relaksasi() {
     const saved = localStorage.getItem(LS_LAST_TRACK);
     return saved ? Number(saved) : 0;
   });
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   useEffect(() => {
     localStorage.setItem(LS_LAST_TRACK, String(trackIdx));
+  }, [trackIdx]);
+  useEffect(() => {
+    if (buttonRefs.current[trackIdx]) {
+      buttonRefs.current[trackIdx]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }, [trackIdx]);
 
   // pilih teknik dari query/last
@@ -143,6 +121,14 @@ export default function Relaksasi() {
     const lastId = localStorage.getItem(LS_LAST_TECH);
     setSelected(TECHNIQUES.find((t) => t.id === lastId) ?? TECHNIQUES[0]);
   }, [params]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      // Preserve scroll position to keep title visible
+      // Do not reset scrollTop to 0
+      // containerRef.current.scrollTop = 0;
+    }
+  }, [trackIdx]);
 
   // set panjang awal ketika teknik berubah
   useEffect(() => {
@@ -190,37 +176,7 @@ export default function Relaksasi() {
     ? (RELAX_PLAYLIST[trackIdx]?.src ?? selected?.track ?? "")
     : (selected?.track ?? "");
 
-  // --- playlist scroll nav ---
-  const playlistRef = useRef<HTMLDivElement | null>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
 
-  const updatePlaylistNav = () => {
-    const el = playlistRef.current;
-    if (!el) { setCanPrev(false); setCanNext(false); return; }
-    setCanPrev(el.scrollLeft > 0);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-  };
-
-  useEffect(() => {
-    updatePlaylistNav();
-    const el = playlistRef.current;
-    if (!el) return;
-    const onScroll = () => updatePlaylistNav();
-    el.addEventListener("scroll", onScroll);
-    window.addEventListener("resize", updatePlaylistNav);
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", updatePlaylistNav);
-    };
-  }, [isMusicMode]);
-
-  const scrollPlaylist = (dir: number) => {
-    const el = playlistRef.current;
-    if (!el) return;
-    const step = Math.round(el.clientWidth * 0.8); // geser ±80% lebar view
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
-  };
 
 
   // audio control
@@ -254,23 +210,22 @@ export default function Relaksasi() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-theme-background">
-      <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl tips-main-card flex flex-col h-[90vh] overflow-hidden">
+  <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl tips-main-card flex flex-col h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="relative flex items-center w-full" style={{ minHeight: 64 }}>
+        <div className="relative flex items-center w-full py-4 px-4" style={{ minHeight: 80 }}>
           <button
             onClick={handleBackClick}
-            className="absolute left-0 top-1/2 -translate-y-1/2 eksplorasi-back-btn flex items-center hover:opacity-70 transition-opacity"
+            className="absolute left-4 top-1/2 -translate-y-1/2 eksplorasi-back-btn flex items-center hover:opacity-70 transition-opacity"
             aria-label="Kembali"
             style={{ padding: 8 }}
           >
             <ChevronLeftIcon className="h-7 w-7 eksplorasi-back-icon" />
           </button>
-          <h2 className="w-full text-2xl font-bold text-center tips-title">Relaksasi</h2>
+          <h2 className="w-full text-3xl font-bold text-center tips-title">Relaksasi</h2>
         </div>
 
-        {/* Glass card */}
-        <div className="mt-4 rounded-3xl bg-white ring-1 ring-gray-200 shadow-2xl p-6 md:p-8">
-          <div className="grid md:grid-cols-[1fr_320px] gap-8 items-center">
+        <div className="mt-2 p-4 md:p-6" ref={containerRef}>
+          <div className="grid md:grid-cols-[1fr_400px] gap-8 items-center">
             {/* Left: ring + controls */}
             <div className="flex flex-col items-center">
               <div className="relative grid place-items-center">
@@ -326,9 +281,7 @@ export default function Relaksasi() {
 
               {/* volume & durasi */}
               <div className="mt-5 w-full max-w-sm">
-                <div className="mb-2 flex items-center gap-2 text-xs text-gray-700">
-                  <SpeakerWaveIcon className="h-4 w-4" /> Volume musik
-                </div>
+                <SpeakerWaveIcon className="h-4 w-4 text-gray-500" />
                 <input
                   type="range"
                   min={0}
@@ -346,7 +299,7 @@ export default function Relaksasi() {
             </div>
 
             {/* Right: detail teknik + playlist (jika musik) */}
-            <div className="rounded-2xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+            <div className="p-5 bg-transparent">
               <div className="flex items-center gap-3 mb-2">
                 <div className={`${COLOR_MAP[selected.color]} p-3 rounded-full`}>
                   {selected.icon === "heart" && <HeartIcon className="h-6 w-6 eksplorasi-icon" />}
@@ -355,14 +308,14 @@ export default function Relaksasi() {
                   {selected.icon === "bolt" && <BoltIcon className="h-6 w-6 eksplorasi-icon" />}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{selected.title}</h3>
-                  <p className="text-sm text-gray-600">{selected.description}</p>
+                  <h3 className="text-xl font-semibold text-gray-900">{selected.title}</h3>
+                  <p className="text-base text-gray-600">{selected.description}</p>
                 </div>
               </div>
 
               {/* instructions */}
               {selected.id !== "478" ? (
-                <div className="mt-3 text-[13px] leading-relaxed text-gray-700">
+                <div className="mt-3 text-sm leading-relaxed text-gray-700">
                   {selected.id === "mindfulness" ? (
                     <ol className="list-decimal pl-5 space-y-1">
                       <li>Perhatikan napas: udara masuk–keluar, sensasi di hidung atau perut.</li>
@@ -376,11 +329,11 @@ export default function Relaksasi() {
                       <li>Rasakan perbedaan tegang vs. rileks di tiap bagian.</li>
                     </ol>
                   ) : (
-                    <p>Dengarkan musik santai sambil bernapas alami dan mengistirahatkan mata sejenak.</p>
+                    <p></p>
                   )}
                 </div>
               ) : (
-                <div className="mt-3 text-[13px] leading-relaxed text-gray-700">
+                <div className="mt-3 text-sm leading-relaxed text-gray-700">
                   <p>Ikuti ritme: <span className="font-medium">Tarik 4</span> • <span className="font-medium">Tahan 7</span> • <span className="font-medium">Hembuskan 8</span>.</p>
                 </div>
               )}
@@ -390,62 +343,28 @@ export default function Relaksasi() {
                 <div className="mt-5">
                   <div className="mb-2 text-sm font-medium text-gray-800">Pilih Musik</div>
 
-                  <div className="relative">
-                    {/* tombol kiri */}
-                    {canPrev && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto bg-gray-100 p-2 rounded-lg">
+                    {RELAX_PLAYLIST.map((t, i) => (
                       <button
-                        onClick={() => scrollPlaylist(-1)}
-                        aria-label="Geser kiri"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white p-1 ring-1 ring-gray-200 shadow hover:bg-gray-50"
+                        key={t.id}
+                        ref={(el) => {
+                          buttonRefs.current[i] = el;
+                        }}
+                        onClick={() => {
+                          setTrackIdx(i);
+                          setElapsed(0);
+                          const a = audioRef.current;
+                          if (a) a.currentTime = 0;
+                        }}
+                        className={`w-full text-left p-3 rounded-lg border transition-colors ${i === trackIdx
+                          ? "bg-teal-100 border-teal-300 text-teal-900"
+                          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                        aria-label={`Pilih lagu ${t.title}`}
                       >
-                        <ChevronLeftIcon className="h-5 w-5" />
+                        <div className="font-medium text-sm">{t.title}</div>
+                        <div className="text-xs text-gray-500">{t.artist}</div>
                       </button>
-                    )}
-
-                    {/* list chip bisa digeser */}
-                    <div
-                      ref={playlistRef}
-                      className="flex gap-2 overflow-x-auto pb-2 px-7 scroll-smooth"
-                    >
-                      {RELAX_PLAYLIST.map((t, i) => (
-                        <button
-                          key={t.id}
-                          onClick={() => {
-                            setTrackIdx(i);
-                            setElapsed(0);
-                            const a = audioRef.current;
-                            if (a) a.currentTime = 0;
-                          }}
-                          className={`shrink-0 rounded-full px-3 py-1.5 text-sm ring-1 transition
-            ${i === trackIdx
-                              ? "bg-teal-900 text-white ring-gray-900"
-                              : "bg-white/80 text-gray-700 ring-white hover:bg-white"}`}
-                          aria-label={`Pilih lagu ${t.title}`}
-                        >
-                          {t.title}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* tombol kanan */}
-                    {canNext && (
-                      <button
-                        onClick={() => scrollPlaylist(1)}
-                        aria-label="Geser kanan"
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white p-1 ring-1 ring-gray-200 shadow hover:bg-gray-50"
-                      >
-                        <ChevronRightIcon className="h-5 w-5" />
-                      </button>
-                    )}
-
-                    {/* fade di tepi sebagai hint bisa digeser */}
-                    <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white to-transparent" />
-                    <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white to-transparent" />
-
-                    {/* hint teks kecil (muncul saat hanya bisa ke kanan) */}
-                    {!canPrev && canNext && (
-                      <div className="absolute -bottom-5 right-0 text-[10px] text-gray-400">geser →</div>
-                    )}
+                    ))}
                   </div>
 
                   <p className="mt-3 text-[11px] text-gray-500">
@@ -453,28 +372,11 @@ export default function Relaksasi() {
                     <a href={RELAX_PLAYLIST[trackIdx].sourceUrl} target="_blank" rel="noreferrer" className="underline">link</a>. {RELAX_PLAYLIST[trackIdx].attribution ?? ""}
                   </p>
                 </div>
-
               )}
             </div>
           </div>
 
-          {/* Chips teknik */}
-          <div className="mt-6 flex gap-3 overflow-x-auto pb-1">
-            {TECHNIQUES.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setSelected(t)}
-                className={`shrink-0 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm ring-1 transition ${selected.id === t.id
-                  ? "bg-teal-900 text-white ring-gray-900"
-                  : "bg-white/80 text-gray-700 ring-white hover:bg-white"
-                  }`}
-                aria-label={`Pilih ${t.title}`}
-              >
-                <span className={`${COLOR_MAP[t.color]} rounded-full p-1.5`}></span>
-                {t.title}
-              </button>
-            ))}
-          </div>
+          
         </div>
 
         {/* audio element */}
