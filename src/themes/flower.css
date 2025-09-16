@@ -1,0 +1,1095 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&display=swap');
+
+/* fresh.css */
+
+/* 1. Warna dasar halaman */
+body,
+.main-bg {
+  background: url("/flower.png") center/cover no-repeat !important;
+  min-height: 100vh;
+  color: #b88a3a; /* oranye kecoklatan, mirip gambar */
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+  /* font-family: "Quicksand", cursive, sans-serif; */
+}
+.bg-theme-background {
+  background-image: url("/flower.png");
+  background-size: cover;
+  background-position: top;
+  background-repeat: no-repeat;
+}
+.user-profile-menu {
+  font-family: "Poppins", sans-serif !important;
+}
+.text-login {
+  color: #b88a3a !important;
+}
+.text-register {
+  color: #4b382a !important;
+}
+/* 2. Sidebar */
+.chat-sidebar {
+  background: #fff8f0 !important;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  /* krem muda */
+}
+
+/* 4. Card & Input */
+.login-card {
+  background: #fff !important;
+  border: 1.5px solid #ffe0b2 !important;
+}
+
+/* 5. Bubble Chat */
+.bubble-user {
+  background: #fff8f0 !important;
+  color: #b88a3a;
+  border-radius: 24px;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.02em !important;
+}
+.bubble-bot {
+  background: #fff !important;
+  color: #787276;
+  border-radius: 24px;
+  border: 1.5px solid #ffe0b2 !important;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* 6. Menu Sidebar */
+.sidebar-menu {
+  color: #b88a3a !important;
+  background: transparent;
+  border-radius: 12px;
+  transition: background 0.2s, color 0.2s;
+  padding: 10px 16px;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+.sidebar-menu:hover,
+.sidebar-menu.active {
+  background: #ffe0b2 !important;
+  color: #b88a3a !important;
+}
+
+/* 7. Divider & Label */
+.chat-riwayat-text {
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(to right, transparent, #ffe0b2, transparent);
+}
+.chat-riwayat-label {
+  font-size: 1rem !important;
+  text-transform: uppercase;
+  font-weight: 600 !important;
+  margin-left: 0.75rem;
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+
+  color: #696e71;
+  letter-spacing: 0.05em;
+}
+.login-google-btn {
+  font-family: "Nunito", sans-serif;
+  background: linear-gradient(
+    135deg,
+    #f0d982 0%,
+    #e8d185 25%,
+    #a8c4d4 75%,
+    #8bb5c9 100%
+  );
+}
+.login-btn {
+  background: linear-gradient(
+    135deg,
+    #f0d982 0%,
+    #e8d185 25%,
+    #a8c4d4 75%,
+    #8bb5c9 100%
+  );
+  color: #2c3e50;
+  border: none;
+
+  transition: all 0.3s ease;
+  font-family: "Nunito", sans-serif;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.login-input {
+  background: #f7f4cd !important;
+  color: #43270f;
+  border: 1.5px solid #ffe135 !important;
+  padding: 14px 18px;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+
+.send-icon-girly {
+  color: #b88a3a;
+  transition: color 0.2s;
+}
+.send-icon-girly:hover {
+  color: #ff7043;
+}
+
+/* 9. Chat History */
+.pesan-history {
+  color: #b88a3a !important;
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+}
+
+/* 10. Scrollbar */
+::-webkit-scrollbar-thumb {
+  background: #ffe0b2;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #fff8f0;
+}
+.max-h-32::-webkit-scrollbar {
+  width: 0 !important;
+  background: transparent;
+}
+.max-h-32 {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* MASUK TANPA LOGIN */
+.login-guest-popup {
+  background: #fff8f0 !important;
+  border: 2px solid #ffe0b2;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(184, 138, 58, 0.18);
+  color: #b88a3a;
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+  min-width: 320px;
+  max-width: 95vw;
+}
+
+.login-guest-popup h2 {
+  color: #43270f;
+  /* font-weight: 700; */
+  font-size: 12px;
+  font-family: "Oswald", sans-serif;
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.tamu-form {
+  background: #fffde7 !important;
+  color: #495057 !important;
+  border: 1.5px solid #ffe135 !important;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 1rem;
+  font-family: inherit;
+  font-size: 12px;
+  transition: box-shadow 0.2s, border 0.2s;
+  font-family: "Oswald", sans-serif;
+}
+
+.login-guest-input {
+  background: #f7f4cd !important;
+  color: #b88a3a !important;
+  border: 1.5px solid #ffe135 !important;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+
+.login-guest-input::placeholder {
+  color: #b88a3a;
+  opacity: 0.7;
+}
+
+.login-guest-btn {
+  background: linear-gradient(135deg, #f0d982 0%, #a8c4d4 100%);
+  color: #43270f;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(184, 138, 58, 0.08);
+}
+
+.login-guest-btn:hover {
+  background: linear-gradient(135deg, #ffe135 0%, #8bb5c9 100%);
+  color: #b88a3a;
+}
+
+.login-guest-btn-cancel {
+  background: #ffe0b2;
+  color: #b88a3a;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  transition: background 0.2s;
+}
+
+.login-guest-btn-cancel:hover {
+  background: #f7f4cd;
+}
+/* FORGOT PASSWORD */
+.lupa-password {
+  font-family: "Nunito", sans-serif;
+  border-color: #ffe0b2 !important;
+}
+.lupa-password-title {
+  color: #43270f;
+}
+.lupa-password-input {
+  background: #fffde7 !important;
+  color: #63666a !important;
+  border: 1.5px solid #ffe135 !important;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 1rem;
+  font-family: inherit;
+  font-size: 14px;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+.lupa-password-btn {
+  background: linear-gradient(
+    135deg,
+    #f0d982 0%,
+    #e8d185 25%,
+    #a8c4d4 75%,
+    #8bb5c9 100%
+  );
+  color: #2c2c2c;
+  border: none;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 12px 24px;
+  transition: all 0.3s ease;
+}
+/* REGISTER */
+
+.register-form {
+  background: #f7f4cd !important;
+  color: #43270f;
+  border: 1.5px solid #ffe135 !important;
+  padding: 14px 18px;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+
+.register-btn {
+  background: linear-gradient(
+    135deg,
+    #f0d982 0%,
+    #e8d185 25%,
+    #a8c4d4 75%,
+    #8bb5c9 100%
+  );
+  color: #2c3e50;
+  border: none;
+
+  transition: all 0.3s ease;
+  font-family: "Nunito", sans-serif;
+}
+.text-login {
+  color: #4b382a !important;
+}
+.register-card {
+  background: #fff !important;
+  border: 1.5px solid #ffe0b2 !important;
+}
+
+/* CHAT */
+.chat-input-pesan {
+  font-family: "Nunito", sans-serif;
+}
+.chat-emot {
+  font-family: "Nunito", sans-serif;
+}
+.chat-icon {
+  background: #ffffe1 !important;
+}
+.chat-title {
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 1.5rem !important;
+  color: #efc6a1 !important;
+  letter-spacing: 0.03em !important;
+}
+
+.chat-sidebar {
+  background: #fff8f0 !important; /* krem muda */
+}
+.bot-chat {
+  /* background: linear-gradient(135deg, #43e97b 0%, #4ecdc4 100%) !important; */
+  background: #efc6a1 !important;
+}
+/* 3. Header */
+.chat-header {
+  background: #fff !important;
+  color: #efc6a1 !important;
+  font-family: "Caveat", cursive;
+  /* border-bottom: 1.5px solid #d5d5d8 !important; */
+}
+.burger-icon {
+  color: #b88a3a !important;
+  transition: color 0.2s ease;
+}
+.text-greeting {
+  color: #7dd3fc; /* biru soft (Tailwind: blue-600) */
+  font-weight: 600;
+  font-family: "Poppins", "Inter", sans-serif !important;
+}
+
+.text-username {
+  color: #efc6a1; /* oranye soft (Tailwind: orange-400) */
+  font-weight: 600;
+}
+/* ========== EKSPLORASI PAGE STYLES (GIRLY THEME) ========== */
+
+.eksplorasi-container {
+  background: #fff !important;
+  border: 1.5px solid #ffe0b2 !important;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(184, 138, 58, 0.15);
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+  min-height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
+  height: calc(100vh - 4rem);
+}
+
+/* 14. Header Eksplorasi - konsisten dengan girly header */
+.eksplorasi-header {
+  background: #fff !important;
+  color: #b88a3a !important;
+  font-weight: bold;
+  border-bottom: 1.5px solid #ffe0b2 !important;
+  border-radius: 24px 24px 0 0;
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+}
+
+.eksplorasi-title {
+  color: #b88a3a !important;
+  font-weight: 700;
+}
+
+.eksplorasi-back-btn {
+  color: #b88a3a !important;
+  /* transition: opacity 0.2s ease; */
+}
+
+.eksplorasi-back-icon {
+  color: #b88a3a !important;
+}
+
+/* 15. Section konten Eksplorasi */
+.eksplorasi-section {
+  background: #fff !important;
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+  color: #b88a3a;
+  border-radius: 0 0 24px 24px;
+}
+
+/* 16. Grid animasi */
+.eksplorasi-grid {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 17. Card Eksplorasi - konsisten dengan girly card */
+.eksplorasi-card {
+  background: #fff !important;
+  border: 1.5px solid #ffe0b2 !important;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(184, 138, 58, 0.1);
+  /* transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); */
+}
+
+.eksplorasi-card:hover {
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(184, 138, 58, 0.2);
+  border-color: #d4af37 !important;
+}
+
+/* 18. Icon background - girly color palette */
+.eksplorasi-icon-bg {
+  transition: none !important;
+}
+
+.eksplorasi-icon-bg-yellow {
+  background: linear-gradient(135deg, #fff8f0, #ffe0b2) !important;
+  box-shadow: 0 4px 15px rgba(255, 224, 178, 0.3);
+}
+
+.eksplorasi-icon-bg-pink {
+  background: linear-gradient(135deg, #fce4ec, #f8bbd9) !important;
+  box-shadow: 0 4px 15px rgba(248, 187, 217, 0.3);
+}
+
+.eksplorasi-icon-bg-red {
+  background: linear-gradient(135deg, #ffebee, #ffcdd2) !important;
+  box-shadow: 0 4px 15px rgba(255, 205, 210, 0.3);
+}
+
+.eksplorasi-icon-bg-green {
+  background: linear-gradient(135deg, #e8f5e8, #c8e6c9) !important;
+  box-shadow: 0 4px 15px rgba(200, 230, 201, 0.3);
+}
+
+.eksplorasi-icon-bg-teal {
+  background: linear-gradient(135deg, #e0f2f1, #b2dfdb) !important;
+  box-shadow: 0 4px 15px rgba(178, 223, 219, 0.3);
+}
+
+/* 19. Text dalam card Eksplorasi */
+.eksplorasi-text {
+  color: #b88a3a !important;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(184, 138, 58, 0.1);
+}
+
+/* 20. Icon dalam card */
+.eksplorasi-icon {
+  color: #b88a3a !important;
+  filter: drop-shadow(0 2px 4px rgba(184, 138, 58, 0.2));
+}
+
+/* 21. Hover effects untuk icon background */
+.eksplorasi-card .group:hover .eksplorasi-icon-bg {
+  transform: scale(1.1) rotate(3deg);
+}
+
+/* 22. Responsive adjustments */
+@media (max-width: 768px) {
+  .eksplorasi-container {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+
+  .eksplorasi-grid {
+    gap: 1rem;
+  }
+
+  .eksplorasi-card {
+    width: 8rem;
+    height: 8rem;
+  }
+
+  .eksplorasi-card[style*="1 / 3"] {
+    height: 10rem;
+  }
+}
+
+/* 23. Focus states untuk accessibility */
+.eksplorasi-card:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.eksplorasi-back-btn:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ========== TIPS KESEHATAN PAGE STYLES (GIRLY THEME) ========== */
+
+/* Card utama tengah, ukuran mirip eksplorasi */
+.tips-main-card {
+  background: #fff; /* Warna cream seperti eksplorasi */
+  border-radius: 24px;
+
+  padding: 15px;
+  max-width: 900px;
+  width: 90vw;
+  min-height: 70vh;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1.5px solid #f4e4c1; /* Border cream yang lebih lembut */
+  overflow: hidden;
+  z-index: 1;
+  transition: none !important;
+  animation: none !important;
+  font-family: "Nunito", sans-serif;
+}
+.tips-detail {
+  width: 90vw;
+  max-width: 900px;
+  min-width: 340px;
+  padding: 2.5rem 2rem;
+  box-sizing: border-box;
+  background: rgba(
+    255,
+    248,
+    235,
+    0.98
+  ); /* Background cream seperti eksplorasi */
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(184, 138, 58, 0.2);
+  border: 1px solid #f4e4c1;
+  transition: none !important;
+  animation: none !important;
+}
+.tips-judul {
+  color: #6d3914 !important; /* Coklat yang lebih netral */
+}
+
+/* Bagian konten grid yang bisa di-scroll */
+.tips-scrollable-content {
+  width: 100%;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  max-height: 65vh;
+  padding-bottom: 1rem;
+  transition: none !important;
+  animation: none !important;
+}
+/* Ubah warna judul agar mirip eksplorasi */
+.tips-title {
+  color: #d4a574; /* Warna emas yang lebih warm seperti "Hay, Agnes" */
+  font-family: "Nunito", sans-serif;
+  /* text-shadow: 0 1px 2px rgba(212, 165, 116, 0.1); */
+  border-bottom: 1px solid #f4e4c1;
+}
+
+/* Card dengan warna yang diselaraskan */
+.tips-card {
+  border: 1.5px solid #f4e4c1 !important;
+  font-family: "Nunito", sans-serif;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 4px 12px rgba(184, 138, 58, 0.1) !important;
+}
+
+/* Tag colors yang disesuaikan dengan tema */
+.tag-color-1 {
+  background: #f0f7ff !important; /* Biru yang lebih lembut */
+  color: #5a7ba8 !important; /* Biru yang lebih warm */
+  border: 1px solid #e1efff;
+}
+.tag-color-2 {
+  background: #fff2d6 !important; /* Cream yang lebih lembut */
+  color: #b8873a !important; /* Coklat emas */
+  border: 1px solid #f4e4c1;
+}
+
+.tag-color-3 {
+  background: #fdf2f8 !important; /* Pink yang lebih lembut */
+  color: #c7799b !important; /* Pink yang lebih warm */
+  border: 1px solid #f9e6f0;
+}
+
+.tips-card-title {
+  color: #8b6b3a !important; /* Coklat emas yang lebih gelap untuk readability */
+}
+
+.tips-card-meta {
+  color: #a0856b !important; /* Coklat yang lebih netral */
+}
+
+.tips-card-content {
+  color: #6b5b4d !important; /* Coklat yang lebih gelap untuk konten */
+}
+
+/* Tag dengan warna yang lebih harmonis */
+.tips-tag {
+  background: #f7edd6 !important; /* Cream yang lebih warm */
+  color: #8b6b3a !important;
+  border: 1px solid #efdcc1;
+}
+
+/* Tag warna */
+.tips-tag {
+  background: #f7e6c4 !important;
+}
+.tips-grid-fade {
+  animation: fadeInUp 0.6s ease-out;
+}
+/* Modal background */
+.tips-modal-bg {
+  background: linear-gradient(135deg, #e6eaff 60%, #fdf6f0 100%) !important;
+  transition: none !important;
+  animation: none !important;
+}
+.card-flower-0 {
+  background: #ffe4e6 !important;
+  border: 2px solid #fb7185 !important;
+}
+.card-flower-1 {
+  background: #f3e8ff !important;
+  border: 2px solid #c084fc !important;
+}
+.card-flower-2 {
+  background: #f0fdf4 !important;
+  border: 2px solid #34d399 !important;
+}
+.card-flower-3 {
+  background: #fef3c7 !important;
+  border: 2px solid #fbbf24 !important;
+}
+.card-flower-4 {
+  background: #e0e7ff !important;
+  border: 2px solid #6366f1 !important;
+}
+/* flower.css - Tema Flower */
+
+/* Modal Background */
+.detail-bg {
+  background: #fff;
+  backdrop-filter: blur(12px);
+  border: 1px solid #dee9f0;
+  font-family: "Poppins", sans-serif;
+
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* Close Button */
+.detail-close-btn {
+  color: rgb(244, 114, 182);
+  transition: color 0.2s ease;
+}
+
+.detail-close-btn:hover {
+  color: rgb(219, 39, 119);
+}
+
+/* Title */
+.detail-title {
+  color: #32769b !important;
+}
+
+/* Category and Source Info */
+.detail-kat-text {
+  color: #6c757d;
+  font-weight: 200;
+}
+
+/* Source Link */
+.detail-link {
+  color: #0197f6;
+  transition: color 0.2s ease;
+  font-weight: 400;
+}
+
+.flower-link:hover {
+  color: rgb(29, 78, 216);
+}
+
+/* Content Text */
+.flower-content {
+  color: rgb(55, 65, 81);
+  font-weight: 500;
+  line-height: 1.7;
+}
+
+/* Tags */
+.flower-tag {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(55, 65, 81);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.flower-tag:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.flower-tag-1 {
+  background: rgba(147, 197, 253, 0.6);
+  border: 1px solid rgba(147, 197, 253, 0.8);
+}
+
+.flower-tag-2 {
+  background: rgba(254, 215, 170, 0.6);
+  border: 1px solid rgba(254, 215, 170, 0.8);
+}
+
+.flower-tag-3 {
+  background: rgba(244, 114, 182, 0.5);
+  border: 1px solid rgba(244, 114, 182, 0.7);
+  color: rgb(255, 255, 255);
+}
+
+.flower-tag-4 {
+  background: rgba(134, 239, 172, 0.6);
+  border: 1px solid rgba(134, 239, 172, 0.8);
+}
+
+.flower-tag-5 {
+  background: rgba(196, 181, 253, 0.6);
+  border: 1px solid rgba(196, 181, 253, 0.8);
+}
+
+.quote-judul {
+  font-family: "Fredoka", cursive;
+  font-weight: 600;
+  font-size: 20px;
+  color: #e3aa56;
+}
+.mood-btn {
+  display: flex;
+  align-items: center;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.02em !important;
+  color: #4b5563; /* abu-abu gelap (teks di gambar) */
+  border: 1px solid #e5e7eb; /* abu netral sangat soft */
+  background-color: #ffffff;
+  border-radius: 9999px; /* full rounded */
+  padding: 6px 14px;
+  min-width: unset; /* biarkan otomatis sesuai konten */
+  min-height: 42px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* lebih soft */
+  transition: background 0.2s, border 0.2s, transform 0.15s;
+}
+
+.mood-btn:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  transform: scale(1.02);
+}
+
+.mood-btn.selected,
+.mood-btn:active {
+  background: #fff8e1;
+  border: 1.5px solid #ffd54f;
+  color: #374151;
+  transform: scale(1.04);
+}
+
+.mood-btn .mood-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
+  box-shadow: none;
+  margin-right: 6px;
+}
+/* Mental Health Questionnaire Color Scheme - Pertanyaan Page (Soft Colors) */
+
+/* Background Gradients */
+.pertanyaan .bg-main-gradient {
+  background: linear-gradient(#c7e2ff, #ddeeff);
+}
+
+/* Soft Header Gradient - Menggunakan warna yang lebih lembut */
+.pertanyaan .bg-header-gradient {
+  background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 50%, #fef3c7 100%);
+}
+
+/* Soft Button Primary Gradient - Warna yang lebih lembut dan tidak terlalu kontras */
+.pertanyaan .bg-button-primary-gradient {
+  background: #bfa3d9; /* solid neutral purple */
+}
+
+.pertanyaan .bg-button-primary-gradient:hover {
+  background: #a88bc1 !important; /* solid neutral purple, no hover effect */
+  transform: none !important;
+  transition: none !important;
+}
+
+.pertanyaan .bg-button-primary-gradient > .absolute.inset-0 {
+  display: none !important;
+}
+
+.pertanyaan .bg-success-gradient {
+  background: linear-gradient(135deg, #86efac 0%, #4ade80 50%, #7dd3fc 100%);
+}
+
+.pertanyaan .bg-success-gradient:hover {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #38bdf8 100%);
+}
+
+/* Card Backgrounds */
+.pertanyaan .bg-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pertanyaan .bg-instruction-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fff7ed 100%);
+  border-color: #fde68a;
+}
+
+.pertanyaan .bg-question-header {
+  background: linear-gradient(135deg, #fafaf9 0%, #f0f9ff 100%);
+  border-color: #e7e5e4;
+}
+
+/* Interactive Elements */
+.pertanyaan .option-default {
+  background-color: #f5f5f4;
+  border-color: #d6d3d1;
+}
+
+.pertanyaan .option-default:hover {
+  background-color: #f0f9ff;
+  border-color: #7dd3fc;
+}
+
+.pertanyaan .option-selected {
+  background: linear-gradient(135deg, #f0f9ff 0%, #fef7ff 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px #bae6fd;
+}
+
+/* Radio Button Styles - Warna yang lebih soft */
+.pertanyaan .radio-default {
+  border-color: #cbd5e1;
+}
+
+.pertanyaan .radio-default:hover {
+  border-color: #7dd3fc;
+}
+
+.pertanyaan .radio-selected {
+  border-color: #38bdf8;
+  background-color: #38bdf8;
+}
+
+.pertanyaan .radio-ring {
+  box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.3);
+}
+
+/* Floating Background Elements */
+.pertanyaan .floating-bg-1 {
+  background: linear-gradient(
+    135deg,
+    rgba(125, 211, 252, 0.2) 0%,
+    rgba(240, 179, 255, 0.2) 100%
+  );
+}
+
+.pertanyaan .floating-bg-2 {
+  background: linear-gradient(
+    45deg,
+    rgba(240, 179, 255, 0.2) 0%,
+    rgba(252, 211, 77, 0.2) 100%
+  );
+}
+
+.pertanyaan .floating-bg-3 {
+  background: linear-gradient(
+    90deg,
+    rgba(125, 211, 252, 0.15) 0%,
+    rgba(56, 189, 248, 0.15) 100%
+  );
+}
+
+/* Text Colors - Menggunakan warna yang lebih soft */
+.pertanyaan .text-primary {
+  color: #c084fc;
+}
+
+.pertanyaan .text-secondary {
+  color: #f59e0b;
+}
+
+.pertanyaan .text-accent {
+  color: #0ea5e9;
+}
+
+.pertanyaan .text-neutral-light {
+  color: #94a3b8;
+}
+
+.pertanyaan .text-success {
+  color: #22c55e;
+}
+
+/* Icon Container Styles - Warna yang lebih soft */
+.pertanyaan .icon-container-primary {
+  background: linear-gradient(135deg, #fde68a 0%, #fed7aa 100%);
+}
+
+.pertanyaan .icon-container-user {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pertanyaan .icon-container-number {
+  background: linear-gradient(135deg, #7dd3fc 0%, #f0abfc 100%);
+}
+
+/* Success Popup Styles */
+.pertanyaan .success-popup-bg {
+  background: linear-gradient(135deg, #86efac 0%, #4ade80 25%, #7dd3fc 100%);
+}
+
+.pertanyaan .success-icon-bg {
+  background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+}
+
+.pertanyaan .success-ping {
+  background-color: rgba(134, 239, 172, 0.4);
+}
+
+/* Custom Animations */
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pertanyaan .animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+/* Responsive Design Helpers */
+@media (max-width: 768px) {
+  .pertanyaan .bg-main-gradient {
+    background: linear-gradient(180deg, #f0f9ff 0%, #fef7ff 50%, #fffbeb 100%);
+  }
+}
+
+/* EDIT PROFILE */
+.profil-header {
+  background: #fffbeb !important;
+  border-bottom: 1.5px solid #ffe0b2 !important;
+}
+.profil-button {
+  background: linear-gradient(
+    135deg,
+    #f0d982 0%,
+    #e8d185 25%,
+    #a8c4d4 75%,
+    #8bb5c9 100%
+  );
+}
+.edit-card {
+  background: #fff;
+  border: 1.5px solid #ffe0b2 !important;
+  border-radius: 24px;
+}
+
+.nav-menu-item {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%) !important;
+  /* border: 1.5px solid #f57c00 !important; */ /* removed border as per feedback */
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-weight: 600 !important;
+  color: #e65100 !important;
+  box-shadow: 0 2px 8px rgba(245, 124, 0, 0.2) !important;
+}
+
+.nav-menu-item-icon-special {
+  color: #f57c00 !important; /* distinct orange for icon */
+}
+
+.nav-menu-item:hover {
+  background: linear-gradient(135deg, #ffecb3 0%, #ffe082 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3) !important;
+}
+
+/* fav-theme.css */
+
+.chat-input-pesan input {
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.02em !important;
+  color: #b88a3a !important;
+}
+
+/* Warna background halaman */
+.fav-bg {
+  background-color: #fff;
+  border: 1.5px solid #a8c4d4; /* border-gray-200 */
+}
+
+/* Header text */
+.fav-header-title {
+  color: #5190a2; /* text-blue-800 */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* drop-shadow */
+}
+
+/* Border bawah header */
+.fav-header-border {
+  border-bottom: 1px solid #a8c4d4; /* border-blue-400 */
+  padding-bottom: 0.25rem;
+}
+
+/* Card quote */
+.fav-quote-card {
+  background-color: white;
+  border-left: 4px solid #dee8f1; /* border-blue-300 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Icon kutip di belakang */
+.fav-quote-icon {
+  color: #f0d982; /* text-blue-200 */
+  opacity: 0.4;
+}
+
+/* Isi quote */
+.fav-quote-text {
+  color: #374151; /* text-gray-700 */
+}
+
+/* Penulis */
+.fav-quote-author {
+  color: #e399ad; /* text-blue-700 */
+}
+
+/* Tombol pagination */
+.fav-btn-prev {
+  background-color: #e1ecee; /* bg-blue-200 */
+  color: #5190a2; /* text-blue-700 */
+}
+
+.fav-btn-next {
+  background-color: #5190a2; /* bg-blue-500 */
+  color: white;
+}
+
+.fav-pagination-text {
+  color: #1d4ed8; /* text-blue-700 */
+}
