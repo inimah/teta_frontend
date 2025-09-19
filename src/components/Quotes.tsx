@@ -8,6 +8,8 @@ interface Mood {
   label: string;
   emoji: string;
   category_name: string;
+  description?: string;
+  color?: string;
 }
 
 interface Quote {
@@ -26,31 +28,15 @@ interface FavoriteResponse {
   } | null;
 }
 
-const moods: Mood[] = [
-  { label: "Sedih", emoji: "😔", category_name: "sedih" },
-  { label: "Marah", emoji: "😡", category_name: "marah" },
-  { label: "Cemas", emoji: "🥶", category_name: "cemas" },
-  {
-    label: "Semangat",
-    emoji: "😊",
-    category_name: "motivasi",
-  },
-  { label: "Insecure", emoji: "😟", category_name: "insecure" },
-  { label: "Self-love", emoji: "💖", category_name: "self-love" },
-  { label: "Lucu", emoji: "😂", category_name: "lucu" },
-  { label: "Bersyukur", emoji: "🙏", category_name: "bersyukur" },
-  { label: "Senang", emoji: "😁", category_name: "senang" },
-];
-
 const Quotes: React.FC = () => {
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [hasTried, setHasTried] = useState<boolean>(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-  const navigate = useNavigate();
   const quoteRef = React.useRef<HTMLDivElement>(null);
 
   const cardColors: string[] = [
@@ -74,12 +60,101 @@ const Quotes: React.FC = () => {
   const cardTextColor = cardTextColors[currentIndex % cardTextColors.length];
   const cardColor = cardColors[currentIndex % cardColors.length];
 
+  const handleBackClick = () => navigate(-1);
+
+  const handlePrev = (): void => {
+    setCurrentIndex((prev: number) => (prev === 0 ? quotes.length - 1 : prev - 1));
+  };
+
+  const handleNext = (): void => {
+    setCurrentIndex((prev: number) => (prev === quotes.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleMoodClick = (mood: Mood): void => {
+    setSelectedMood(mood);
+    setQuotes([]);
+    setHasTried(false);
+    setCurrentIndex(0);
+    fetchQuote(mood.category_name);
+
+    setTimeout(() => {
+      quoteRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, 500);
+  };
+
+  const handleHeartClick = (): void => {
+    if (!quotes.length) return;
+    const currentId = quotes[currentIndex]?._id;
+    if (!currentId) return;
+    if (favoriteIds.includes(currentId)) handleUnfavorite(currentId);
+    else handleFavorite(currentId);
+  };
+
+  const currentQuote = quotes[currentIndex];
+  const isCurrentQuoteFavorited = currentQuote ? favoriteIds.includes(currentQuote._id) : false;
+
+const moods = [
+  {
+    label: "Sedih",
+    emoji: "😔",
+    category_name: "sedih",
+    color: "bg-blue-50 hover:bg-blue-100"
+  },
+  {
+    label: "Marah",
+    emoji: "😡",
+    category_name: "marah",
+    color: "bg-red-50 hover:bg-red-100"
+  },
+  {
+    label: "Cemas",
+    emoji: "🥶",
+    category_name: "cemas",
+    color: "bg-purple-50 hover:bg-purple-100"
+  },
+  {
+    label: "Semangat",
+    emoji: "😊",
+    category_name: "motivasi",
+    color: "bg-yellow-50 hover:bg-yellow-100"
+  },
+  {
+    label: "Insecure",
+    emoji: "😟",
+    category_name: "insecure",
+    color: "bg-green-50 hover:bg-green-100"
+  },
+  {
+    label: "Self-love",
+    emoji: "💖",
+    category_name: "self-love",
+    color: "bg-pink-50 hover:bg-pink-100"
+  },
+  {
+    label: "Lucu",
+    emoji: "😂",
+    category_name: "lucu",
+    color: "bg-orange-50 hover:bg-orange-100"
+  },
+  {
+    label: "Bersyukur",
+    emoji: "🙏",
+    category_name: "bersyukur",
+    color: "bg-teal-50 hover:bg-teal-100"
+  },
+  {
+    label: "Senang",
+    emoji: "😁",
+    category_name: "senang",
+    color: "bg-indigo-50 hover:bg-indigo-100"
+  },
+];
+
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
     setUserId(storedUserId);
   }, []);
 
-    // ✅ FIX: satu useEffect saja untuk ambil favorit (konsisten ke /api/user-favs/:userId)
   useEffect(() => {
     if (!userId) return;
     let aborted = false;
@@ -88,14 +163,13 @@ const Quotes: React.FC = () => {
       try {
         const res = await fetch(`/api/user-favs/${userId}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: FavoriteResponse[] = await res.json();
+        const data = await res.json();
 
         const ids = data
-          .filter((fav) => fav.quote_id && fav.quote_id._id)
-          .map((fav) => fav.quote_id!._id);
+          .filter((fav: FavoriteResponse) => fav.quote_id && fav.quote_id._id)
+          .map((fav: FavoriteResponse) => fav.quote_id!._id);
 
         if (!aborted) {
-          // dedupe
           setFavoriteIds(Array.from(new Set(ids)));
         }
       } catch (err) {
@@ -108,13 +182,13 @@ const Quotes: React.FC = () => {
     };
   }, [userId]);
 
-  const fetchQuote = async (categoryName: string): Promise<void> => {
+  const fetchQuote = async (categoryName: string) => {
     if (!categoryName) return;
     setLoading(true);
     setHasTried(true);
     try {
       const res = await fetch(`/api/quotes?category_name=${categoryName}`);
-      const data: Quote[] = await res.json();
+      const data = await res.json();
       setQuotes(Array.isArray(data) ? data : [data].filter(Boolean));
       setCurrentIndex(0);
     } catch (err) {
@@ -124,16 +198,15 @@ const Quotes: React.FC = () => {
     setLoading(false);
   };
 
-  // ✅ helper dedupe
   const addFavLocal = (id: string) =>
     setFavoriteIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   const removeFavLocal = (id: string) =>
     setFavoriteIds((prev) => prev.filter((x) => x !== id));
 
-  const handleFavorite = async (quoteId: string): Promise<void> => {
+  const handleFavorite = async (quoteId: string) => {
     if (!quoteId) return;
     if (!userId) {
-      addFavLocal(quoteId); // tamu: lokal saja
+      addFavLocal(quoteId);
       return;
     }
     try {
@@ -148,7 +221,7 @@ const Quotes: React.FC = () => {
     }
   };
 
-const handleUnfavorite = async (quoteId: string): Promise<void> => {
+const handleUnfavorite = async (quoteId: string) => {
     if (!quoteId) return;
     if (!userId) {
       removeFavLocal(quoteId);
@@ -166,93 +239,67 @@ const handleUnfavorite = async (quoteId: string): Promise<void> => {
     }
   };
 
- const handlePrev = (): void => {
-    setCurrentIndex((prev: number) => (prev === 0 ? quotes.length - 1 : prev - 1));
-  };
 
- const handleNext = (): void => {
-    setCurrentIndex((prev: number) => (prev === quotes.length - 1 ? 0 : prev + 1));
-  };
 
-  const handleHeartClick = (): void => {
-    if (!quotes.length) return;
-    const currentId = quotes[currentIndex]?._id;
-    if (!currentId) return;
-    if (favoriteIds.includes(currentId)) handleUnfavorite(currentId);
-    else handleFavorite(currentId);
-  };
-
-  const handleMoodClick = (mood: Mood): void => {
-    setSelectedMood(mood.label);
-    setQuotes([]);
-    setHasTried(false);
-    setCurrentIndex(0);
-    fetchQuote(mood.category_name);
-
-    setTimeout(() => {
-      quoteRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 500);
-  };
-
-  const currentQuote = quotes[currentIndex];
-  const isCurrentQuoteFavorited = currentQuote ? favoriteIds.includes(currentQuote._id) : false;
-  const handleBackClick = () => navigate(-1);
-
- return (
+  return (
     <div className="min-h-screen w-full flex items-center justify-center bg-theme-background">
-      <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl bg-white flex flex-col h-[90vh] overflow-auto">
-        <div className="sticky top-0 z-20 bg-white pt-6 pb-2 px-6 rounded-t-3xl">
-          <div className="flex items-center w-full mb-2">
-            <button
-              onClick={handleBackClick}
-              className="eksplorasi-back-btn flex items-center hover:bg-gray-100 rounded-full transition-all"
-              aria-label="Kembali"
-              style={{ minWidth: 40, justifyContent: "flex-start" }}
-            >
-              <ChevronLeftIcon className="h-7 w-7 eksplorasi-back-icon text-gray-400" />
-            </button>
-          </div>
+      <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl tips-main-card flex flex-col h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div
+          className="relative flex items-center w-full px-4"
+          style={{ minHeight: 70 }}
+        >
+          <button
+            onClick={handleBackClick}
+            className="absolute left-0 top-1/2 -translate-y-1/2 eksplorasi-back-btn flex items-center hover:opacity-70 transition-opacity"
+            aria-label="Kembali"
+            style={{ padding: 8 }}
+          >
+            <ChevronLeftIcon className="h-7 w-7 eksplorasi-back-icon" />
+          </button>
+          <h2 className="w-full text-2xl font-bold text-center tips-title py-4">
+            Quotes
+          </h2>
         </div>
+        <hr className="border-t border-gray-200 mb-6" />
 
-        <div className="flex flex-col w-full px-6">
-          <div className="text-center mb-2 ">
-            <h1 className="font-bold text-2xl sm:text-3xl quote-judul font-[Quicksand] text-[#c49e6c] leading-tight">
-              Bagaimana perasaanmu hari ini?
-            </h1>
-          </div>
-
-          <div className="flex justify-center w-full mb-16 mt-6">
-            <div className="grid grid-cols-3 gap-6 w-full max-w-lg">
-              {moods.map((m: Mood) => (
-                <button
-                  key={m.label}
-                  className={`
-                    flex flex-col items-center justify-center 
-                    p-4 rounded-2xl border-2 transition-all duration-300
-                    hover:scale-105 hover:shadow-lg
-                    ${
-                      selectedMood === m.label
-                        ? "border-gray-300 bg-gray-100 shadow-md"
-                        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                    }
-                  `}
-                  onClick={() => handleMoodClick(m)}
-                  type="button"
-                >
-                  <span className="text-2xl sm:text-3xl mb-2">{m.emoji}</span>
-                  <span
-                    className={`
-                      text-xs sm:text-sm font-medium whitespace-nowrap
-                      ${selectedMood === m.label ? "text-gray-500" : "text-gray-600"}
-                    `}
-                  >
-                    {m.label}
-                  </span>
-                </button>
-              ))}
+        {/* Scrollable Content */}
+        <div className="tips-scrollable-content px-6">
+          {/* Header Text */}
+          <div className="flex justify-center items-center mb-8 fade-in">
+            <div>
+              <h1 className="text-2sm font-bold text-primary text-center">
+                Bagaimana perasaanmu hari ini?
+              </h1>
+              <p className="text-muted-foreground text-2sm text-center">
+                Pilih mood untuk mendapatkan inspirasi yang sesuai
+              </p>
             </div>
           </div>
-           <div ref={quoteRef} className="flex-1 flex flex-col items-center justify-center px-6 pb-8 mt-16">
+
+          {/* Mood Selection Grid */}
+          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-8 mt-4">
+            {moods.map((m: Mood) => (
+              <div
+                key={m.label}
+                className={`
+                  card-hover cursor-pointer border-0 shadow-lg fade-in p-3 rounded-lg
+                  ${m.color}
+                  ${selectedMood?.label === m.label ? "ring-2 ring-primary" : ""}
+                `}
+                onClick={() => handleMoodClick(m)}
+              >
+                <div className="text-center">
+                  <div className="flex justify-center mb-1">
+                    <span className="text-xl">{m.emoji}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold">{m.label}</h3>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div ref={quoteRef} className="flex-1 flex flex-col items-center justify-center px-6 pb-8 mt-16">
             {quotes.length > 0 && currentQuote && (
               <div className="w-full max-w-4xl">
                 <div className="flex items-center justify-center gap-6">
@@ -262,54 +309,47 @@ const handleUnfavorite = async (quoteId: string): Promise<void> => {
                       onClick={handlePrev}
                       aria-label="Quote sebelumnya"
                     >
-                      <FaArrowAltCircleLeft className="text-xl" />
+                      <FaArrowAltCircleLeft className="text-xl"   />
                     </button>
                   )}
 
-                  <div
-                    className={`
-                      flex-1 max-w-2xl min-h-[200px] sm:min-h-[240px]
-                      ${cardColor} rounded-3xl shadow-xl border border-white
-                      flex flex-col justify-between p-8 sm:p-10
-                      transform transition-all duration-500 hover:scale-[1.02]
-                    `}
-                  >
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 text-center italic font-medium">
-                        "{currentQuote.text}"
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-6 pt-4">
-                        <button
-                          onClick={handleHeartClick}
-                          type="button"
-                          aria-pressed={isCurrentQuoteFavorited}
-                          aria-label={isCurrentQuoteFavorited ? "Hapus dari favorit" : "Tambah ke favorit"}
-                          className="
-                            flex items-center justify-center
-                            w-12 h-12             /* lebih besar */
-                            bg-white              /* latar putih agar kontras */
-                            rounded-full
-                            shadow-lg border-2 border-gray-200
-                            hover:border-gray-300 hover:bg-gray-50
-                            transition-all duration-300
-                            hover:scale-110 active:scale-95
-                            focus:outline-none focus:ring-2 focus:ring-rose-200
-                          "
-                        >
-                        <FaHeart
-                          className={`
-                            text-lg transition-all duration-300
-                            ${isCurrentQuoteFavorited ? "text-red-500 scale-110" : "text-gray-400 hover:text-red-400"}
-                          `}
-                        />
-                      </button>
-
-                      <div className="flex-1 text-right">
-                        <span className={`text-sm sm:text-base font-semibold ${cardTextColor} opacity-80`}>
-                          — {currentQuote.author}
-                        </span>
+                  <div className="flex-1 max-w-2xl">
+                    <div className="border-0 shadow-lg bg-blue-50/80 backdrop-blur-sm fade-in p-3 rounded-lg">
+                      <div className="text-center">
+                        <p className="text- muted-foreground leading-relaxed max-w-3xl mx-auto italic">
+                          "{currentQuote.text}"
+                        </p>
+                        <div className="flex items-center justify-between mt-3 pt-1">
+                          <button
+                            onClick={handleHeartClick}
+                            type="button"
+                            aria-pressed={isCurrentQuoteFavorited}
+                            aria-label={isCurrentQuoteFavorited ? "Hapus dari favorit" : "Tambah ke favorit"}
+                            className="
+                              flex items-center justify-center
+                              w-12 h-12
+                              bg-white
+                              rounded-full
+                              shadow-lg border-2 border-gray-200
+                              hover:border-gray-300 hover:bg-gray-50
+                              transition-all duration-300
+                              hover:scale-110 active:scale-95
+                              focus:outline-none focus:ring-2 focus:ring-rose-200
+                            "
+                          >
+                            <FaHeart
+                              className={`
+                                text-lg transition-all duration-300
+                                ${isCurrentQuoteFavorited ? "text-red-500 scale-110" : "text-gray-400 hover:text-red-400"}
+                              `}
+                            />
+                          </button>
+                          <div className="flex-1 text-right">
+                            <span className="text-sm font-semibold text-primary opacity-80">
+                              — {currentQuote.author}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -348,13 +388,6 @@ const handleUnfavorite = async (quoteId: string): Promise<void> => {
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="text-6xl mb-4">😔</div>
                 <p className="text-gray-500 text-lg text-center">Tidak ada kutipan untuk mood ini.</p>
-              </div>
-            )}
-
-            {!selectedMood && !loading && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="text-6xl mb-4">✨</div>
-                <p className="text-gray-500 text-lg">Pilih mood yang sesuai dengan perasaanmu</p>
               </div>
             )}
           </div>

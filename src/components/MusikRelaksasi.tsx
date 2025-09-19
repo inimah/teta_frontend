@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import "../themes/flower.css";
 import {
   ChevronLeftIcon,
-  ChevronRightIcon,
   HeartIcon,
   BookOpenIcon,
   MusicalNoteIcon,
@@ -11,15 +10,17 @@ import {
   PauseIcon,
   PlayIcon,
   SpeakerWaveIcon,
+  ArrowPathIcon, // NEW: refresh icon for "Ulangi"
 } from "@heroicons/react/24/outline";
-import { RELAX_PLAYLIST, } from "../data/relaxPlaylist";
-
 
 /**
  * Relaksasi.tsx — Zen Glass UI + Playlist Musik
  * - Query: /relaksasi?tech=478|musik|mindfulness|pmr
  * - Persist: volume, teknik terakhir, dan track musik terakhir
  */
+
+// ===== Config API =====
+const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:5000";
 
 // ---- Types ----
 type Technique = {
@@ -34,15 +35,18 @@ type Technique = {
   color: "yellow" | "pink" | "red" | "teal" | "green" | "blue";
 };
 
+type Track = { id: string; title: string; src: string };
+
 // ---- Data ----
 const TECHNIQUES: Technique[] = [
   {
     id: "musik",
     title: "Musik Relaksasi",
-    description: "Dengarkan musik santai sambil mengistirahatkan mata sejenak.",
+    description: "Dengarkan latar musik menenangkan saat jeda.",
     minutes: 5,
     icon: "note",
-    track: "/audio/soft-piano.mp3", // fallback jika playlist kosong
+    // fallback jika playlist dari API kosong
+    track: "/audio/relaksasi/Aylex - Sounds of Nature (freetouse.com).mp3",
     color: "red",
   },
 ];
@@ -70,7 +74,7 @@ const RING_HEX: Record<Technique["color"], string> = {
   pink: "#ec4899",
   red: "#ef4444",
   teal: "#10b981",
-  green: "#89be9dff",
+  green: "#22c55e",
   blue: "#3b82f6",
 };
 
@@ -83,7 +87,6 @@ export default function Relaksasi() {
   const [params] = useSearchParams();
 
   const [selected, setSelected] = useState<Technique | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [playing, setPlaying] = useState(false);
@@ -95,20 +98,46 @@ export default function Relaksasi() {
   });
   const [stageLabel, setStageLabel] = useState<string | null>(null);
 
-  // === Playlist state (khusus teknik musik)
+  // === State playlist dari API
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loadingTracks, setLoadingTracks] = useState(true);
+  const [tracksErr, setTracksErr] = useState<string | null>(null);
+
+  // index track aktif
   const [trackIdx, setTrackIdx] = useState<number>(() => {
     const saved = localStorage.getItem(LS_LAST_TRACK);
     return saved ? Number(saved) : 0;
   });
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   useEffect(() => {
     localStorage.setItem(LS_LAST_TRACK, String(trackIdx));
   }, [trackIdx]);
+
+  // Fetch playlist dari backend
   useEffect(() => {
-    if (buttonRefs.current[trackIdx]) {
-      buttonRefs.current[trackIdx]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [trackIdx]);
+    let alive = true;
+    (async () => {
+      try {
+        setLoadingTracks(true);
+        const r = await fetch(`${API_BASE}/api/relax-tracks`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const json = await r.json();
+        const data: Track[] = Array.isArray(json?.tracks) ? json.tracks : [];
+        if (!alive) return;
+        setTracks(data);
+        setTrackIdx((i) => Math.max(0, Math.min(i, Math.max(0, data.length - 1))));
+        setTracksErr(null);
+      } catch (e: any) {
+        if (!alive) return;
+        setTracks([]);
+        setTracksErr(e?.message || "Gagal memuat playlist");
+      } finally {
+        if (alive) setLoadingTracks(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // pilih teknik dari query/last
   useEffect(() => {
@@ -122,14 +151,6 @@ export default function Relaksasi() {
     setSelected(TECHNIQUES.find((t) => t.id === lastId) ?? TECHNIQUES[0]);
   }, [params]);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      // Preserve scroll position to keep title visible
-      // Do not reset scrollTop to 0
-      // containerRef.current.scrollTop = 0;
-    }
-  }, [trackIdx]);
-
   // set panjang awal ketika teknik berubah
   useEffect(() => {
     if (!selected) return;
@@ -139,7 +160,10 @@ export default function Relaksasi() {
     setStageLabel(null);
     localStorage.setItem(LS_LAST_TECH, selected.id);
     const a = audioRef.current;
-    if (a) { a.currentTime = 0; a.pause(); }
+    if (a) {
+      a.currentTime = 0;
+      a.pause();
+    }
   }, [selected]);
 
   // timer sederhana
@@ -166,35 +190,69 @@ export default function Relaksasi() {
     let acc = 0;
     for (let i = 0; i < selected.pattern.length; i++) {
       acc += selected.pattern[i];
-      if (pos < acc) { setStageLabel(selected.stages?.[i] ?? null); break; }
+      if (pos < acc) {
+        setStageLabel(selected.stages?.[i] ?? null);
+        break;
+      }
     }
   }, [elapsed, playing, selected?.pattern, selected?.stages, totalStage]);
 
-  // ===== Audio source (pakai playlist kalau mode musik)
+  // ===== Audio source (pakai playlist API kalau mode musik)
   const isMusicMode = selected?.id === "musik";
-  const audioSrc = isMusicMode
-    ? (RELAX_PLAYLIST[trackIdx]?.src ?? selected?.track ?? "")
-    : (selected?.track ?? "");
 
+  const audioSrc =
+    isMusicMode
+      ? (tracks[trackIdx]?.src
+        ? `${API_BASE}${tracks[trackIdx].src}`
+        : selected?.track
+          ? `${API_BASE}${selected.track}`
+          : "")
+      : selected?.track
+        ? (selected.track.startsWith("http")
+          ? selected.track
+          : `${API_BASE}${selected.track}`)
+        : "";
 
+  // ===== PERBAIKAN MINIMAL =====
+  // 1) Encode agar aman untuk spasi/() dll
+  const safeAudioSrc = audioSrc ? encodeURI(audioSrc) : "";
 
+  // 2) Paksa reload saat sumber audio berubah (beberapa browser butuh ini)
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.load();
+    if (playing) {
+      a.play().catch((err) => {
+        console.warn("Audio play failed:", err);
+      });
+    }
+  }, [safeAudioSrc, playing]);
+  // ===== END PERBAIKAN =====
 
-  // audio control
+  // audio control (volume + play/pause toggle)
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
     a.volume = volume / 100;
-    if (playing) a.play().catch(() => { }); // interaksi user dibutuhkan di iOS
+    if (playing) a.play().catch(() => { });
     else a.pause();
-  }, [playing, volume, audioSrc]);
+  }, [playing, volume, safeAudioSrc]);
 
-  useEffect(() => { localStorage.setItem(LS_VOLUME_KEY, String(volume)); }, [volume]);
+  useEffect(() => {
+    localStorage.setItem(LS_VOLUME_KEY, String(volume));
+  }, [volume]);
 
   // keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === " ") { e.preventDefault(); setPlaying((p) => !p); }
-      if (e.key === "Escape") { setPlaying(false); }
+      if (e.key === " ") {
+        e.preventDefault();
+        setPlaying((p) => !p);
+      }
+      if (e.key === "Escape") {
+        setPlaying(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -205,27 +263,27 @@ export default function Relaksasi() {
   const remaining = Math.max(0, length - elapsed);
 
   if (!selected) return null;
-
   const ringColor = RING_HEX[selected.color];
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-theme-background">
-  <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl tips-main-card flex flex-col h-[90vh] overflow-hidden">
+      <div className="w-full max-w-4xl mx-auto rounded-3xl shadow-2xl tips-main-card flex flex-col h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="relative flex items-center w-full py-4 px-4" style={{ minHeight: 80 }}>
+        <div className="relative flex items-center w-full" style={{ minHeight: 64 }}>
           <button
             onClick={handleBackClick}
-            className="absolute left-4 top-1/2 -translate-y-1/2 eksplorasi-back-btn flex items-center hover:opacity-70 transition-opacity"
+            className="absolute left-0 top-1/2 -translate-y-1/2 eksplorasi-back-btn flex items-center hover:opacity-70 transition-opacity"
             aria-label="Kembali"
             style={{ padding: 8 }}
           >
             <ChevronLeftIcon className="h-7 w-7 eksplorasi-back-icon" />
           </button>
-          <h2 className="w-full text-3xl font-bold text-center tips-title">Relaksasi</h2>
+          <h2 className="w-full text-2xl font-bold text-center tips-title">Musik Relaksasi</h2>
         </div>
 
-        <div className="mt-2 p-4 md:p-6" ref={containerRef}>
-          <div className="grid md:grid-cols-[1fr_400px] gap-8 items-center">
+        {/* Glass card */}
+        <div className="mt-4 rounded-3xl bg-white ring-1 ring-gray-200 shadow-2xl p-6 md:p-8">
+          <div className="grid md:grid-cols-[1fr_320px] gap-8 items-start">
             {/* Left: ring + controls */}
             <div className="flex flex-col items-center">
               <div className="relative grid place-items-center">
@@ -273,33 +331,63 @@ export default function Relaksasi() {
                 )}
                 <button
                   className="px-4 py-2 rounded-xl bg-white/80 hover:bg-white text-sm font-medium ring-1 ring-white inline-flex items-center gap-2"
-                  onClick={() => { setElapsed(0); setPlaying(false); setStageLabel(null); const a = audioRef.current; if (a) a.currentTime = 0; }}
+                  onClick={() => {
+                    setElapsed(0);
+                    setPlaying(false);
+                    setStageLabel(null);
+                    const a = audioRef.current;
+                    if (a) a.currentTime = 0;
+                  }}
                 >
+                  <ArrowPathIcon className="h-5 w-5" /> {/* NEW icon */}
                   Ulangi
                 </button>
               </div>
 
               {/* volume & durasi */}
               <div className="mt-5 w-full max-w-sm">
-                <SpeakerWaveIcon className="h-4 w-4 text-gray-500" />
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={volume}
-                  onChange={(e) => setVolume(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="mt-3 flex items-center gap-3 text-sm text-gray-700">
+
+                {/* Baris slider: icon + slider + angka persen di kanan */}
+                <div className="flex items-center gap-3">
+                  <SpeakerWaveIcon className="h-5 w-5 text-gray-600" />
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={volume}
+                    onChange={(e) => setVolume(Number(e.target.value))}
+                    className="w-full"
+                    aria-label="Volume musik"
+                  />
+                  <span className="text-xs text-gray-600 w-10 text-right">
+                    {volume}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-sm text-gray-700">
                   <span>Durasi: {Math.round(length / 60)} menit</span>
-                  <button className="px-2 py-1 rounded-full bg-white/80 ring-1 ring-white hover:bg-white" onClick={() => setLength((l) => Math.max(60, l - 60))}>-1</button>
-                  <button className="px-2 py-1 rounded-full bg-white/80 ring-1 ring-white hover:bg-white" onClick={() => setLength((l) => l + 60)}>+1</button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="h-7 w-7 text-sm inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 shadow-sm"
+                      onClick={() => setLength((l) => Math.max(60, l - 60))}
+                      aria-label="Kurangi 1 menit"
+                    >
+                      –
+                    </button>
+                    <button
+                      className="h-7 w-7 text-sm inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 shadow-sm"
+                      onClick={() => setLength((l) => l + 60)}
+                      aria-label="Tambah 1 menit"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Right: detail teknik + playlist (jika musik) */}
-            <div className="p-5 bg-transparent">
+            <div className="rounded-2xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
               <div className="flex items-center gap-3 mb-2">
                 <div className={`${COLOR_MAP[selected.color]} p-3 rounded-full`}>
                   {selected.icon === "heart" && <HeartIcon className="h-6 w-6 eksplorasi-icon" />}
@@ -308,79 +396,116 @@ export default function Relaksasi() {
                   {selected.icon === "bolt" && <BoltIcon className="h-6 w-6 eksplorasi-icon" />}
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{selected.title}</h3>
-                  <p className="text-base text-gray-600">{selected.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-900">{selected.title}</h3>
+                  <p className="text-sm text-gray-600">{selected.description}</p>
                 </div>
               </div>
 
-              {/* instructions */}
-              {selected.id !== "478" ? (
-                <div className="mt-3 text-sm leading-relaxed text-gray-700">
-                  {selected.id === "mindfulness" ? (
-                    <ol className="list-decimal pl-5 space-y-1">
-                      <li>Perhatikan napas: udara masuk–keluar, sensasi di hidung atau perut.</li>
-                      <li>Saat pikiran mengembara, sadari, lalu kembali ke napas dengan lembut.</li>
-                      <li>Biarkan musik sebagai latar, bukan pusat perhatian.</li>
-                    </ol>
-                  ) : selected.id === "pmr" ? (
-                    <ol className="list-decimal pl-5 space-y-1">
-                      <li>Mulai dari kaki: tegangkan 3–5 detik, lalu lepaskan perlahan.</li>
-                      <li>Lanjut ke betis, paha, perut, tangan, bahu, hingga wajah.</li>
-                      <li>Rasakan perbedaan tegang vs. rileks di tiap bagian.</li>
-                    </ol>
-                  ) : (
-                    <p></p>
-                  )}
-                </div>
-              ) : (
-                <div className="mt-3 text-sm leading-relaxed text-gray-700">
-                  <p>Ikuti ritme: <span className="font-medium">Tarik 4</span> • <span className="font-medium">Tahan 7</span> • <span className="font-medium">Hembuskan 8</span>.</p>
-                </div>
-              )}
-
-              {/* Playlist selector & attribution (hanya mode musik) */}
+              {/* Playlist – LIST VERTIKAL (ala Spotify) */}
               {isMusicMode && (
                 <div className="mt-5">
                   <div className="mb-2 text-sm font-medium text-gray-800">Pilih Musik</div>
 
-                  <div className="space-y-2 max-h-48 overflow-y-auto bg-gray-100 p-2 rounded-lg">
-                    {RELAX_PLAYLIST.map((t, i) => (
-                      <button
-                        key={t.id}
-                        ref={(el) => {
-                          buttonRefs.current[i] = el;
-                        }}
-                        onClick={() => {
-                          setTrackIdx(i);
-                          setElapsed(0);
-                          const a = audioRef.current;
-                          if (a) a.currentTime = 0;
-                        }}
-                        className={`w-full text-left p-3 rounded-lg border transition-colors ${i === trackIdx
-                          ? "bg-teal-100 border-teal-300 text-teal-900"
-                          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                        aria-label={`Pilih lagu ${t.title}`}
-                      >
-                        <div className="font-medium text-sm">{t.title}</div>
-                        <div className="text-xs text-gray-500">{t.artist}</div>
-                      </button>
-                    ))}
-                  </div>
+                  {/* Loading / Error / Empty */}
+                  {loadingTracks && <div className="text-sm text-gray-500">Memuat playlist…</div>}
+                  {tracksErr && !loadingTracks && (
+                    <div className="text-sm text-red-600">Gagal memuat: {tracksErr}</div>
+                  )}
+                  {!loadingTracks && !tracksErr && tracks.length === 0 && (
+                    <div className="text-sm text-gray-500">
+                      Belum ada lagu. Tambahkan via API <code>/api/relax-tracks</code>.
+                    </div>
+                  )}
 
-                  <p className="mt-3 text-[11px] text-gray-500">
-                    Musik: <span className="font-medium">{RELAX_PLAYLIST[trackIdx].title}</span> — {RELAX_PLAYLIST[trackIdx].artist}. Sumber:{" "}
-                    <a href={RELAX_PLAYLIST[trackIdx].sourceUrl} target="_blank" rel="noreferrer" className="underline">link</a>. {RELAX_PLAYLIST[trackIdx].attribution ?? ""}
-                  </p>
+                  {/* Daftar track */}
+                  {tracks.length > 0 && (
+                    <div className="max-h-64 overflow-y-auto rounded-xl ring-1 ring-gray-100 divide-y divide-gray-100 bg-white">
+                      {tracks.map((t, i) => {
+                        const active = i === trackIdx;
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => {
+                              if (active) {
+                                setPlaying((p) => !p);
+                              } else {
+                                setTrackIdx(i);
+                                setElapsed(0);
+                                if (audioRef.current) audioRef.current.currentTime = 0;
+                                setPlaying(true);
+                              }
+                            }}
+                            className={`w-full flex items-center gap-3 px-3 py-3 text-left transition ${active ? "bg-teal-50" : "hover:bg-gray-50"
+                              }`}
+                            title={t.title}
+                          >
+                            {/* nomor urut */}
+                            <div className="w-6 text-xs tabular-nums text-gray-500">
+                              {String(i + 1).padStart(2, "0")}
+                            </div>
+
+                            {/* judul */}
+                            <div className="flex-1 min-w-0">
+                              <div
+                                className={`text-sm font-medium truncate ${active ? "text-teal-900" : "text-gray-900"
+                                  }`}
+                              >
+                                {t.title}
+                              </div>
+                            </div>
+
+                            {/* status kanan: Play/Pause */}
+                            <div className="shrink-0">
+                              {active && playing ? (
+                                <PauseIcon className="h-5 w-5 text-teal-900" />
+                              ) : (
+                                <PlayIcon className="h-5 w-5 text-gray-600" />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Keterangan singkat */}
+                  {tracks.length > 0 && (
+                    <p className="mt-3 text-[11px] text-gray-500">
+                      Memutar: <span className="font-medium">{tracks[trackIdx]?.title ?? "—"}</span>
+                    </p>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          
+          {/* Chips teknik disembunyikan di UI*/}
+          <div className="hidden">
+            {TECHNIQUES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setSelected(t)}
+                className={`shrink-0 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm ring-1 transition ${selected.id === t.id
+                  ? "bg-teal-900 text-white ring-gray-900"
+                  : "bg-white/80 text-gray-700 ring-white hover:bg-white"
+                  }`}
+                aria-label={`Pilih ${t.title}`}
+              >
+                <span className={`${COLOR_MAP[t.color]} rounded-full p-1.5`}></span>
+                {t.title}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* audio element */}
-        <audio ref={audioRef} loop src={audioSrc} preload="auto" />
+        <audio
+          ref={audioRef}
+          loop
+          src={safeAudioSrc}
+          preload="auto"
+          crossOrigin="anonymous"
+        />
       </div>
     </div>
   );

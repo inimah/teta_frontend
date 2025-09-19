@@ -6,7 +6,6 @@ import { firebaseApp } from "../firebase";
 import "../App.css";
 import { toast } from "react-toastify";
 import { FaCheck, FaTimes } from "react-icons/fa";
-import TetaIcon from "./TetaIcon";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -225,7 +224,11 @@ const Login = () => {
       {/* Left Panel - Login Form without background box */}
       <div className="w-full max-w-md rounded-3xl shadow-2xl p-10 login-card">
         <div className="flex flex-col items-center mb-4">
-          <TetaIcon className="w-40 h-20" alt="TETA Chatbot Logo" />
+          <img
+            src="/Teta_girl.png"
+            alt="TETA Chatbot Logo"
+            className="w-35 h-20 "
+          />
         </div>
         <form onSubmit={handleLogin} className="space-y-5">
           <input

@@ -385,29 +385,15 @@ const Home: React.FC = (): React.ReactElement => {
     }
   };
 
-  // === INTI PERUBAHAN: buat sesi server tapi JANGAN push ke chatHistory ===
+  // === PERUBAHAN: reset state tanpa membuat sesi server ===
   const handleNewChat = async () => {
-    try {
-      if (!currentUser) throw new Error("User not authenticated");
-      const response = await axios.post("http://localhost:5000/api/chatbot/session", {
-        userId: currentUser._id,
-      });
-      if (!response.data || !response.data.sessionId) {
-        throw new Error("Failed to create new chat session");
-      }
-      const newSessionId = response.data.sessionId;
-      const newChatId = Date.now().toString();
-
-      setCurrentSessionId(newSessionId);
-      setCurrentChatId(newChatId);
-      setMessages([]);
-      localStorage.setItem("currentSessionId", newSessionId);
-      setCurrentCategory("Hari ini");
-      // TIDAK push ke chatHistory di sini → hindari "Percakapan Baru" kosong
-    } catch (error) {
-      console.error("Error creating new chat session:", error);
-      toast.error("Gagal membuat sesi chat baru. Silakan coba lagi.");
-    }
+    // Reset state tanpa membuat sesi baru
+    setCurrentSessionId(null);
+    setCurrentChatId(null);
+    setMessages([]);
+    localStorage.removeItem("currentSessionId");
+    setCurrentCategory("Hari ini");
+    // Sesi akan dibuat hanya ketika user mengirim pesan pertama
   };
 
   // resort + update judul ketika pesan pertama user
@@ -696,25 +682,24 @@ const Home: React.FC = (): React.ReactElement => {
               <div className="grid grid-cols-1 gap-1 mt-2">
                 {/* Eksplorasi */}
                 <div
-                  className={`group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center hover:scale-[1.02] nav-menu-item ${currentCategory === "Eksplorasi" ? " shadow-md" : " hover:shadow-sm"
-                    }`}
+                  className="group cursor-pointer py-2 px-4 rounded-2xl bg-gradient-to-r from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100 transition-all duration-300 flex items-center hover:scale-[1.02] shadow-sm hover:shadow-md border border-sky-100 hover:border-sky-200"
                   onClick={() => navigate("/eksplorasi")}
                 >
-                  <div className="h-8 w-8 mr-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 nav-menu-item-icon-special" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="h-9 w-9 mr-3 rounded-xl bg-gradient-to-br from-sky-200 to-blue-300 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                     </svg>
                   </div>
-                  <div className="text-sm font-medium text-gray-600">Eksplorasi</div>
+                  <div className="text-sm font-semibold text-sky-700 group-hover:text-sky-800">Eksplorasi</div>
                 </div>
 
                 {/* Cek Kondisi Hatimu */}
                 <div
-                  className="group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center nav-menu-item hover:scale-[1.02] hover:shadow-sm"
+                  className="group cursor-pointer py-2 px-4 rounded-2xl bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 transition-all duration-300 flex items-center hover:scale-[1.02] shadow-sm hover:shadow-md border border-rose-100 hover:border-rose-200"
                   onClick={() => navigate("/pertanyaan")}
                 >
-                  <div className="h-8 w-8 mr-3  rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 nav-menu-item-icon-special" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <div className="h-9 w-9 mr-3 rounded-xl bg-gradient-to-br from-rose-200 to-pink-300 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -726,18 +711,18 @@ const Home: React.FC = (): React.ReactElement => {
                       />
                     </svg>
                   </div>
-                  <div className="text-sm font-medium  text-gray-600">Cek Kondisi Hatimu</div>
+                  <div className="text-sm font-semibold text-rose-700 group-hover:text-rose-800">Cek Kondisi Hatimu</div>
                 </div>
 
                 {/* Chat Baru */}
                 <div
-                  className={`group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Chat baru" ? " shadow-md" : " hover:shadow-sm"
+                  className={`group cursor-pointer py-2 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Chat baru" ? " shadow-md" : " hover:shadow-sm"
                     }`}
                   onClick={() => handleCategoryClick("Chat baru")}
                 >
-                  <div className="h-8 w-8 mr-3  rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <div className="h-10 w-10 mr-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div className="text-sm font-medium text-gray-600">Chat Baru</div>
@@ -762,10 +747,10 @@ const Home: React.FC = (): React.ReactElement => {
                         key={`${chat.sessionId}-${index}`}
                         className="py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between hover:bg-gray-50 t text-gray-600 group"
                       >
-                        <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
-                            <div className="h-5 w-5 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-3 8a9 9 0 110-18 9 9 0 010 18z" />
+                          <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
+                            <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                               </svg>
                             </div>
                           <div
@@ -907,8 +892,8 @@ const Home: React.FC = (): React.ReactElement => {
                         >
                           <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
                             <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text pesan-history" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                               </svg>
                             </div>
                             <div
@@ -1019,8 +1004,8 @@ const Home: React.FC = (): React.ReactElement => {
                         >
                           <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
                             <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text pesan-history " fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                               </svg>
                             </div>
                             <div
@@ -1291,10 +1276,10 @@ const Home: React.FC = (): React.ReactElement => {
                     Bagaimana perasaanmu
                   </h3>
                   <div className="flex flex-wrap justify-center gap-4 mb-8 chat-emot">
-                    <button onClick={() => handleEmotionClick("bahagia")} className="chat-icon text-gray-600 px-4 py-2 rounded-full">😊 Bahagia</button>
-                    <button onClick={() => handleEmotionClick("sedih")} className="chat-icon  text-gray-600 px-4 py-2 rounded-full">🥺 Sedih</button>
-                    <button onClick={() => handleEmotionClick("marah")} className="chat-icon text-gray-600 px-4 py-2 rounded-full">😠 Marah</button>
-                    <button onClick={() => handleEmotionClick("cemas")} className="chat-icon text-gray-600 px-4 py-2 rounded-full">😬 Cemas</button>
+                    <button onClick={() => handleEmotionClick("senang")} className="bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😁 Senang</button>
+                    <button onClick={() => handleEmotionClick("sedih")} className="bg-gradient-to-r from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😔 Sedih</button>
+                    <button onClick={() => handleEmotionClick("marah")} className="bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😡 Marah</button>
+                    <button onClick={() => handleEmotionClick("cemas")} className="bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">🥶 Cemas</button>
                   </div>
                 </>
               ) : (
