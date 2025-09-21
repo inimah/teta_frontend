@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, User, Sparkles } from "lucide-react";
+import { CheckCircle, Sparkles } from "lucide-react";
 import {ChevronLeftIcon} from "@heroicons/react/24/outline";
 
 type Question = {
@@ -13,7 +13,6 @@ type Question = {
 
 const Pertanyaan: React.FC = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState<string>("");
   const [sapaan, setSapaan] = useState<string>("");
   const [guestName, setGuestName] = useState<string>("Guest");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -100,7 +99,7 @@ const Pertanyaan: React.FC = () => {
   // >>> helper: hitung total skor & interpretasi
   const computeScoreAndFlags = () => {
     // total skor 0..21 (7 pertanyaan * 0..3)
-    const totalScore = questions.reduce((sum, q, idx) => {
+    const totalScore = questions.reduce((sum, _, idx) => {
       const ans = selectedAnswers[idx];
       const s = SCORE_MAP[ans ?? ""] ?? 0;
       return sum + s;
@@ -188,11 +187,7 @@ const Pertanyaan: React.FC = () => {
     navigate(target);
   };
 
-  const handleBackToMenu = () => {
-    const isGuest = !localStorage.getItem("authToken");
-    const target = isGuest ? "/tamu" : (isSelfHarmHigh ? "/chat?notice=selfharm" : "/chat");
-    navigate(target);
-  };
+
 
   // >>> tampilkan ringkasan skor & interpretasi di popup
   const { totalScore, interpretation } = (() => {

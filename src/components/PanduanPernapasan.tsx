@@ -275,16 +275,12 @@ export default function Panduanpernafasan() {
     if (!playing || !voiceOn || !stageLabel || !selected) return;
 
     try {
-      const phrase =
-        stageLabel === "Tarik"   ? `Tarik`
-      : stageLabel === "Hembuskan"   ? `Hembuskan`
-      :                             `Tahan`;
+
 
       window.speechSynthesis?.cancel();
 
       // turunkan volume musik saat voice berbicara
       const a = bgAudioRef.current;
-      const prevVol = a ? a.volume : undefined;
       if (a && bgOn) a.volume = Math.min(a.volume ?? (bgVolume / 100), 0.25);
 
       const u = new SpeechSynthesisUtterance(stageLabel);

@@ -314,9 +314,9 @@ const handleUnfavorite = async (quoteId: string) => {
                   )}
 
                   <div className="flex-1 max-w-2xl">
-                    <div className="border-0 shadow-lg bg-blue-50/80 backdrop-blur-sm fade-in p-3 rounded-lg">
+                    <div className={`border-0 shadow-lg ${cardColor} backdrop-blur-sm fade-in p-3 rounded-lg`}>
                       <div className="text-center">
-                        <p className="text- muted-foreground leading-relaxed max-w-3xl mx-auto italic">
+                        <p className={`text- muted-foreground leading-relaxed max-w-3xl mx-auto italic ${cardTextColor}`}>
                           "{currentQuote.text}"
                         </p>
                         <div className="flex items-center justify-between mt-3 pt-1">

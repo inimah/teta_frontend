@@ -16,6 +16,9 @@ const ThemeSwitcher: React.FC = () => {
     localStorage.setItem("theme", theme);
     setCurrentTheme(theme);
     applyTheme(theme);
+
+    // Dispatch custom event for other components to listen
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
   };
 
   React.useEffect(() => {
