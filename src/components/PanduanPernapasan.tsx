@@ -8,7 +8,6 @@ import {
   PlayIcon,
   SpeakerWaveIcon,
 } from "@heroicons/react/24/outline";
-import "../themes/flower.css";
 
 type Technique = {
   id: string;
@@ -385,8 +384,8 @@ export default function PanduanPernapasan() {
                     <button className="px-2 py-1 rounded-full bg-white/80 ring-1 ring-white hover:bg-white" onClick={() => setLength((l) => Math.max(60, l - 60))}>-1</button>
                     <button className="px-2 py-1 rounded-full bg-white/80 ring-1 ring-white hover:bg-white" onClick={() => setLength((l) => l + 60)}>+1</button>
                     </div>
- 
- 
+
+
                    {/* BACKSOUND UI (baru) */}
                    <div className="pt-2 border-t border-gray-100">
                      <div className="flex items-center justify-between">

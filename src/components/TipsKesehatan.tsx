@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../themes/flower.css";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 type Tip = {
   id: string;

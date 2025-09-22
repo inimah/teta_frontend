@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import "../themes/flower.css";
 import {
   ChevronLeftIcon,
   HeartIcon,
@@ -20,7 +19,7 @@ import {
  */
 
 // ===== Config API =====
-const API_BASE = import.meta.env?.VITE_API_URL ?? import.meta.env?.VITE_API_URL + "";
+const API_BASE = window.location.origin;
 
 // ---- Types ----
 type Technique = {
@@ -46,7 +45,7 @@ const TECHNIQUES: Technique[] = [
     minutes: 5,
     icon: "note",
     // fallback jika playlist dari API kosong
-    track: "/audio/relaksasi/Aylex - Sounds of Nature (freetouse.com).mp3",
+    track: "/audio/Aylex - Sounds of Nature (freetouse.com).mp3",
     color: "red",
   },
 ];
