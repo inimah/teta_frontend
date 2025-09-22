@@ -23,7 +23,7 @@ const Login = () => {
   const checkEmailExists = async (email: string) => {
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/auth/check-email",
+        import.meta.env?.VITE_API_URL + "api/auth/check-email",
         { email }
       );
       if (!response.data.exists) {
@@ -52,7 +52,7 @@ const Login = () => {
 
       console.log("Google Token:", googleToken);
       const response = await axios.post(
-        "http://localhost:5000/api/auth/google-login",
+        import.meta.env?.VITE_API_URL + "api/auth/google-login",
         {
           googleToken,
           email: result.user.email,
@@ -106,7 +106,7 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        import.meta.env?.VITE_API_URL + "api/auth/login",
         { email, password },
         { headers: { "Content-Type": "application/json" } }
       );

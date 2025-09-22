@@ -59,7 +59,7 @@ const ChangePassword = () => {
         try {
             setSubmitting(true);
             const res = await axios.put(
-                "http://localhost:5000/api/auth/change-password",
+                import.meta.env?.VITE_API_URL + "api/auth/change-password",
                 { oldPassword, newPassword, confirmPassword },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -111,8 +111,8 @@ const ChangePassword = () => {
                                 onChange={(e) => setOldPassword(e.target.value)}
                                 required
                                 autoComplete="current-password"
-                                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 
-                 focus:bg-white focus:border-blue-500 focus:ring-1 
+                                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50
+                 focus:bg-white focus:border-blue-500 focus:ring-1
                  focus:ring-blue-200 text-sm"
                             />
                         </div>
@@ -129,8 +129,8 @@ const ChangePassword = () => {
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 required
                                 autoComplete="new-password"
-                                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 
-                 focus:bg-white focus:border-blue-500 focus:ring-1 
+                                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50
+                 focus:bg-white focus:border-blue-500 focus:ring-1
                  focus:ring-blue-200 text-sm"
                             />
                         </div>
@@ -147,8 +147,8 @@ const ChangePassword = () => {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
                                 autoComplete="new-password"
-                                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 
-                 focus:bg-white focus:border-blue-500 focus:ring-1 
+                                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50
+                 focus:bg-white focus:border-blue-500 focus:ring-1
                  focus:ring-blue-200 text-sm"
                             />
                         </div>
@@ -166,8 +166,8 @@ const ChangePassword = () => {
                                     onChange={(e) => setCaptcha(e.target.value)}
                                     placeholder="Jawaban"
                                     required
-                                    className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 
-                   focus:bg-white focus:border-blue-500 focus:ring-1 
+                                    className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50
+                   focus:bg-white focus:border-blue-500 focus:ring-1
                    focus:ring-blue-200 text-sm"
                                 />
                                 <button
@@ -183,8 +183,8 @@ const ChangePassword = () => {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full profil-button font-semibold py-3 rounded-lg 
-               transition-all duration-300 bg-blue-600 text-white 
+                            className="w-full profil-button font-semibold py-3 rounded-lg
+               transition-all duration-300 bg-blue-600 text-white
                hover:bg-blue-700 disabled:opacity-60"
                         >
                             {submitting ? "Menyimpan..." : "Simpan Password Baru"}

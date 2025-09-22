@@ -1,5 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { applyTheme } from "../themes/applyTheme";
@@ -39,7 +39,7 @@ const Registrasi = () => {
     name: "",
     sapaan: "",
     email: "",
-    // hp: "", 
+    // hp: "",
     password: "",
     confirmPassword: "",
     birthdate: "",
@@ -192,91 +192,7 @@ const Registrasi = () => {
 
   //   return () => clearTimeout(timeoutId);
   // }, [formData.email, isCheckingEmail]);
-  const EMAIL_CHECK_DELAY = 500;
 
-  const EmailField = ({ formData, setErrors, isSubmitting }: {
-    formData: { email?: string };
-    setErrors: React.Dispatch<React.SetStateAction<Record<string, string | undefined>>>;
-    isSubmitting: boolean;
-  }) => {
-    const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-    const debounceId = useRef<number | null>(null);
-    const lastRequestedEmailRef = useRef<string>("");   // tracks the email used for the in-flight request
-    const abortRef = useRef<AbortController | null>(null);
-
-    useEffect(() => {
-      const email = (formData.email ?? "").trim().toLowerCase();
-
-      // cancel any pending timer/request on dependency change
-      if (debounceId.current) {
-        clearTimeout(debounceId.current);
-        debounceId.current = null;
-      }
-      if (abortRef.current) {
-        abortRef.current.abort();
-        abortRef.current = null;
-      }
-
-      // don’t check while submitting or with empty/invalid input
-      if (!email || isSubmitting) {
-        setIsCheckingEmail(false);
-        return;
-      }
-
-      debounceId.current = window.setTimeout(async () => {
-        setIsCheckingEmail(true);
-
-        const controller = new AbortController();
-        abortRef.current = controller;
-        lastRequestedEmailRef.current = email;
-
-        try {
-          // Prefer using a base URL (proxy) like /api/auth/check-email
-          const res = await fetch("/api/auth/check-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-            signal: controller.signal,
-          });
-
-          // If you switch server to return 409 when exists, you can branch on res.status === 409
-          if (!res.ok) throw new Error("Failed to check email");
-
-          const data = await res.json(); // { exists: boolean }
-
-          // Only apply if this response matches the current input
-          if (lastRequestedEmailRef.current !== (formData.email ?? "").trim().toLowerCase()) {
-            return; // stale response; ignore
-          }
-
-          if (data.exists) {
-            setErrors(prev => ({ ...prev, email: "Email ini sudah terdaftar, silahkan lakukan login" }));
-          } else {
-            setErrors(prev => ({ ...prev, email: undefined }));
-          }
-        } catch (err) {
-          if ((err as any)?.name !== "AbortError") {
-            console.error("Error checking email:", err);
-            // don’t overwrite existing error messaging on network hiccups
-          }
-        } finally {
-          if (!controller.signal.aborted) {
-            setIsCheckingEmail(false);
-            abortRef.current = null;
-          }
-        }
-      }, EMAIL_CHECK_DELAY);
-
-      // cleanup on unmount or dependency change
-      return () => {
-        if (debounceId.current) clearTimeout(debounceId.current);
-        if (abortRef.current) abortRef.current.abort();
-      };
-      // IMPORTANT: depend only on the email and isSubmitting
-    }, [formData.email, isSubmitting, setErrors]);
-
-    return null;
-  };
 
 
   const handleInputChange = (
@@ -358,7 +274,7 @@ const Registrasi = () => {
     // Validasi data sebelum dikirim
     if (
       !formData.name ||
-      !formData.sapaan ||  
+      !formData.sapaan ||
       !formData.email ||
       !formData.password ||
       !formData.confirmPassword ||
@@ -400,7 +316,7 @@ const Registrasi = () => {
     try {
       const submittedEmail = formData.email; // simpan sebelum reset/navigate
 
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(import.meta.env?.VITE_API_URL + "api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // kirimkan tanpa confirmPassword ke backend

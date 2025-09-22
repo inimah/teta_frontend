@@ -50,7 +50,7 @@ const TipsKesehatan: React.FC = () => {
   // ];
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/contents")
+    fetch(import.meta.env?.VITE_API_URL + "api/contents")
       .then((res) => res.json())
       .then((data) => {
         // Filter hanya yang flag: true

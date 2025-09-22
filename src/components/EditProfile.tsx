@@ -26,7 +26,7 @@ const EditProfile = () => {
     const fetchUser = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/auth/user/${userId}`
+          import.meta.env?.VITE_API_URL + `api/auth/user/${userId}`
         );
         const user = res.data.user;
         setFormData({
@@ -98,7 +98,7 @@ const EditProfile = () => {
 
     try {
       const response = await axios.put(
-        "http://localhost:5000/api/auth/update-profile",
+        import.meta.env?.VITE_API_URL + "api/auth/update-profile",
         formData,
         {
           headers: {
@@ -328,7 +328,7 @@ const EditProfile = () => {
                       name="birthdate"
                       value={formData.birthdate}
                       onChange={handleInputChange}
-                      // min = 25 tahun lalu, max = 12 tahun lalu 
+                      // min = 25 tahun lalu, max = 12 tahun lalu
                       min={new Date(
                         new Date().getFullYear() - 25,
                         new Date().getMonth(),

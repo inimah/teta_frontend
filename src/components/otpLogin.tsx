@@ -10,7 +10,7 @@
 
 //   const sendOtp = async (phoneNumber: string, otp: string) => {
 //     try {
-//       await axios.post("http://localhost:5000/api/user/send-otp", {
+//       await axios.post(import.meta.env?.VITE_API_URL + "/api/user/send-otp", {
 //         phoneNumber,
 //         otp,
 //       });
@@ -26,7 +26,7 @@
 //     try {
 //       console.log("Mengirim data untuk verifikasi:", { phoneNumber, otp });
 //       const response = await axios.post(
-//         "http://localhost:5000/api/auth/verify-otp",
+//         import.meta.env?.VITE_API_URL + "/api/auth/verify-otp",
 //         {
 //           phoneNumber,
 //           otp,

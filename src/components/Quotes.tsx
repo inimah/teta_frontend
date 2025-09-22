@@ -266,50 +266,43 @@ const handleUnfavorite = async (quoteId: string): Promise<void> => {
                     </button>
                   )}
 
-                  <div
-                    className={`
-                      flex-1 max-w-2xl min-h-[200px] sm:min-h-[240px]
-                      ${cardColor} rounded-3xl shadow-xl border border-white
-                      flex flex-col justify-between p-8 sm:p-10
-                      transform transition-all duration-500 hover:scale-[1.02]
-                    `}
-                  >
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 text-center italic font-medium">
-                        "{currentQuote.text}"
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-6 pt-4">
-                        <button
-                          onClick={handleHeartClick}
-                          type="button"
-                          aria-pressed={isCurrentQuoteFavorited}
-                          aria-label={isCurrentQuoteFavorited ? "Hapus dari favorit" : "Tambah ke favorit"}
-                          className="
-                            flex items-center justify-center
-                            w-12 h-12             /* lebih besar */
-                            bg-white              /* latar putih agar kontras */
-                            rounded-full
-                            shadow-lg border-2 border-gray-200
-                            hover:border-gray-300 hover:bg-gray-50
-                            transition-all duration-300
-                            hover:scale-110 active:scale-95
-                            focus:outline-none focus:ring-2 focus:ring-rose-200
-                          "
-                        >
-                        <FaHeart
-                          className={`
-                            text-lg transition-all duration-300
-                            ${isCurrentQuoteFavorited ? "text-red-500 scale-110" : "text-gray-400 hover:text-red-400"}
-                          `}
-                        />
-                      </button>
-
-                      <div className="flex-1 text-right">
-                        <span className={`text-sm sm:text-base font-semibold ${cardTextColor} opacity-80`}>
-                          — {currentQuote.author}
-                        </span>
+                  <div className="flex-1 max-w-2xl">
+                    <div className={`border-0 shadow-lg ${cardColor} backdrop-blur-sm fade-in p-3 rounded-lg`}>
+                      <div className="text-center">
+                        <p className={`text- muted-foreground leading-relaxed max-w-3xl mx-auto italic ${cardTextColor}`}>
+                          "{currentQuote.text}"
+                        </p>
+                        <div className="flex items-center justify-between mt-3 pt-1">
+                          <button
+                            onClick={handleHeartClick}
+                            type="button"
+                            aria-pressed={isCurrentQuoteFavorited}
+                            aria-label={isCurrentQuoteFavorited ? "Hapus dari favorit" : "Tambah ke favorit"}
+                            className="
+                              flex items-center justify-center
+                              w-12 h-12
+                              bg-white
+                              rounded-full
+                              shadow-lg border-2 border-gray-200
+                              hover:border-gray-300 hover:bg-gray-50
+                              transition-all duration-300
+                              hover:scale-110 active:scale-95
+                              focus:outline-none focus:ring-2 focus:ring-rose-200
+                            "
+                          >
+                            <FaHeart
+                              className={`
+                                text-lg transition-all duration-300
+                                ${isCurrentQuoteFavorited ? "text-red-500 scale-110" : "text-gray-400 hover:text-red-400"}
+                              `}
+                            />
+                          </button>
+                          <div className="flex-1 text-right">
+                            <span className="text-sm font-semibold text-primary opacity-80">
+                              — {currentQuote.author}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
