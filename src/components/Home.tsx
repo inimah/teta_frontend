@@ -180,14 +180,14 @@ const Home: React.FC = (): React.ReactElement => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showUserMenu]);
 
-  // fetch user 
+  // fetch user
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("authToken");
         if (!token) return;
 
-        const response = await fetch("http://localhost:5000/api/user", {
+        const response = await fetch(import.meta.env?.VITE_API_URL + "api/user", {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
 
@@ -247,7 +247,7 @@ const Home: React.FC = (): React.ReactElement => {
     if (!token) return;
 
     axios
-      .get("http://localhost:5000/api/auth/verify", {
+      .get(import.meta.env?.VITE_API_URL + "api/auth/verify", {
         headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
       })
       .then((response) => {
@@ -321,7 +321,7 @@ const Home: React.FC = (): React.ReactElement => {
     if (currentSessionId && currentChatId) return { sid: currentSessionId, cid: currentChatId };
 
     if (!currentUser) throw new Error("User not authenticated");
-    const { data } = await axios.post("http://localhost:5000/api/chatbot/session", {
+    const { data } = await axios.post(import.meta.env?.VITE_API_URL + "api/chatbot/session", {
       userId: currentUser._id,
     });
 
@@ -344,7 +344,7 @@ const Home: React.FC = (): React.ReactElement => {
       return;
     }
     try {
-      const response = await axios.get(`http://localhost:5000/api/chatbot/get-chat/${userId}`);
+      const response = await axios.get(import.meta.env?.VITE_API_URL + `api/chatbot/get-chat/${userId}`);
       if (response.data && Array.isArray(response.data.chatHistory)) {
         setChatHistory(sortSessions(response.data.chatHistory));
       } else {
@@ -373,7 +373,7 @@ const Home: React.FC = (): React.ReactElement => {
   ) => {
     if (!userId) return;
     try {
-      await axios.post("http://localhost:5000/api/chat/save-chat", {
+      await axios.post(import.meta.env?.VITE_API_URL + "api/chat/save-chat", {
         userId,
         sessionId,
         question: dialogData.question,
@@ -385,29 +385,15 @@ const Home: React.FC = (): React.ReactElement => {
     }
   };
 
-  // === INTI PERUBAHAN: buat sesi server tapi JANGAN push ke chatHistory ===
+  // === PERUBAHAN: reset state tanpa membuat sesi server ===
   const handleNewChat = async () => {
-    try {
-      if (!currentUser) throw new Error("User not authenticated");
-      const response = await axios.post("http://localhost:5000/api/chatbot/session", {
-        userId: currentUser._id,
-      });
-      if (!response.data || !response.data.sessionId) {
-        throw new Error("Failed to create new chat session");
-      }
-      const newSessionId = response.data.sessionId;
-      const newChatId = Date.now().toString();
-
-      setCurrentSessionId(newSessionId);
-      setCurrentChatId(newChatId);
-      setMessages([]);
-      localStorage.setItem("currentSessionId", newSessionId);
-      setCurrentCategory("Hari ini");
-      // TIDAK push ke chatHistory di sini → hindari "Percakapan Baru" kosong
-    } catch (error) {
-      console.error("Error creating new chat session:", error);
-      toast.error("Gagal membuat sesi chat baru. Silakan coba lagi.");
-    }
+    // Reset state tanpa membuat sesi baru
+    setCurrentSessionId(null);
+    setCurrentChatId(null);
+    setMessages([]);
+    localStorage.removeItem("currentSessionId");
+    setCurrentCategory("Hari ini");
+    // Sesi akan dibuat hanya ketika user mengirim pesan pertama
   };
 
   // resort + update judul ketika pesan pertama user
@@ -478,7 +464,7 @@ const Home: React.FC = (): React.ReactElement => {
       ];
 
       // IMPORTANT: use `sid` here
-      // const response = await axios.post("http://localhost:5000/api/openrouter/chat", {
+      // const response = await axios.post(import.meta.env?.VITE_API_URL + "/api/openrouter/chat", {
       //   messages: allMessages,
       //   sessionId: sid,
       //   userId: localStorage.getItem("userId"),
@@ -490,7 +476,7 @@ const Home: React.FC = (): React.ReactElement => {
         userId: localStorage.getItem("userId"),
       });
 
-      // const response = await axios.post("http://localhost:5000/api/hf/chat", {
+      // const response = await axios.post(import.meta.env?.VITE_API_URL + "/api/hf/chat", {
       // messages: allMessages,
       // // optional: you can include sid if you implemented ensureSession()
       // sessionId: sid,
@@ -525,7 +511,7 @@ const Home: React.FC = (): React.ReactElement => {
 
         const sessionInList = chatHistory.find((c) => c.sessionId === sid);
         if (sessionInList && (!sessionInList.title || sessionInList.title === "Percakapan Baru")) {
-          await axios.put(`http://localhost:5000/api/session/rename/${sid}`, {
+          await axios.put(import.meta.env?.VITE_API_URL + `api/session/rename/${sid}`, {
             tajuk: messageToSend.substring(0, 30),
           });
           fetchChatHistory(userId);
@@ -610,7 +596,7 @@ const Home: React.FC = (): React.ReactElement => {
     if (!newTitle || !sessionId) return;
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/session/rename/${sessionId}`,
+        import.meta.env?.VITE_API_URL + `api/session/rename/${sessionId}`,
         { tajuk: newTitle }
       );
       if (response.status === 200) {
@@ -630,7 +616,7 @@ const Home: React.FC = (): React.ReactElement => {
   const handleDelete = async (sessionId: string) => {
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/session/delete/${sessionId}`,
+        import.meta.env?.VITE_API_URL + `api/session/delete/${sessionId}`,
         { enabled: false }
       );
       if (response.status === 200) {
@@ -677,7 +663,7 @@ const Home: React.FC = (): React.ReactElement => {
         )}
         <div
           className={`
-    z-30 h-full w-64 chat-sidebar  flex flex-col 
+    z-30 h-full w-64 chat-sidebar  flex flex-col
     transition-transform duration-300
     ${sidebarOpen ? "fixed top-0 left-0 translate-x-0" : "fixed -translate-x-full"}
     md:static md:translate-x-0 md:z-0
@@ -761,10 +747,10 @@ const Home: React.FC = (): React.ReactElement => {
                         key={`${chat.sessionId}-${index}`}
                         className="py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between hover:bg-gray-50 t text-gray-600 group"
                       >
-                        <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
-                            <div className="h-5 w-5 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-3 8a9 9 0 110-18 9 9 0 010 18z" />
+                          <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
+                            <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                               </svg>
                             </div>
                           <div
@@ -906,8 +892,8 @@ const Home: React.FC = (): React.ReactElement => {
                         >
                           <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
                             <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text pesan-history" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                               </svg>
                             </div>
                             <div
@@ -1018,8 +1004,8 @@ const Home: React.FC = (): React.ReactElement => {
                         >
                           <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
                             <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text pesan-history " fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                               </svg>
                             </div>
                             <div
@@ -1290,10 +1276,10 @@ const Home: React.FC = (): React.ReactElement => {
                     Bagaimana perasaanmu
                   </h3>
                   <div className="flex flex-wrap justify-center gap-4 mb-8 chat-emot">
-                    <button onClick={() => handleEmotionClick("bahagia")} className="chat-icon text-gray-600 px-4 py-2 rounded-full">😊 Bahagia</button>
-                    <button onClick={() => handleEmotionClick("sedih")} className="chat-icon  text-gray-600 px-4 py-2 rounded-full">🥺 Sedih</button>
-                    <button onClick={() => handleEmotionClick("marah")} className="chat-icon text-gray-600 px-4 py-2 rounded-full">😠 Marah</button>
-                    <button onClick={() => handleEmotionClick("cemas")} className="chat-icon text-gray-600 px-4 py-2 rounded-full">😬 Cemas</button>
+                    <button onClick={() => handleEmotionClick("senang")} className="bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😁 Senang</button>
+                    <button onClick={() => handleEmotionClick("sedih")} className="bg-gradient-to-r from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😔 Sedih</button>
+                    <button onClick={() => handleEmotionClick("marah")} className="bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😡 Marah</button>
+                    <button onClick={() => handleEmotionClick("cemas")} className="bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">🥶 Cemas</button>
                   </div>
                 </>
               ) : (

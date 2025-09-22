@@ -22,13 +22,13 @@ const Eksplorasi: React.FC = () => {
     if (!token) {
       setGuestName(storedGuestName);
       axios
-        .get("http://localhost:5000/api/content?flag=true")
+        .get(import.meta.env?.VITE_API_URL + "api/content?flag=true")
         .catch((err) => console.log(err));
       return;
     }
 
     axios
-      .get("http://localhost:5000/api/auth/user", {
+      .get(import.meta.env?.VITE_API_URL + "api/auth/user", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -19,7 +19,7 @@ const ResetPassword = () => {
       return;
     }
 
-    Axios.post(`http://localhost:5000/api/auth/resetPassword/${token}`, {
+    Axios.post(import.meta.env?.VITE_API_URL + `api/auth/resetPassword/${token}`, {
       password,
     })
       .then((response) => {

@@ -17,14 +17,20 @@ const Pertanyaan: React.FC = () => {
   const [guestName, setGuestName] = useState<string>("Guest");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false);
-  const [selectedAnswers, setSelectedAnswers] = useState<{
-    [key: number]: string;
-  }>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: string; }>({});
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
-  const [totalScore, setTotalScore] = useState<number>(0);
-  const [condition, setCondition] = useState<string>("");
-  const [specialMessage, setSpecialMessage] = useState<string>("");
   const totalQuestions = questions.length;
+
+  // >>> mapping teks opsi → skor 0..3
+  const SCORE_MAP: Record<string, number> = {
+    "Tidak pernah": 0,
+    "Kadang-kadang": 1,
+    "Sering": 2,
+    "Hampir setiap hari": 3,
+  };
+
+  // >>> state untuk kondisi khusus self-harm Q7
+  const [isSelfHarmHigh, setIsSelfHarmHigh] = useState<boolean>(false);
 
   const goPrev = () => setCurrentQuestion((c) => Math.max(0, c - 1));
   const goNext = () => {
@@ -48,44 +54,6 @@ const Pertanyaan: React.FC = () => {
     }));
   };
 
-  const calculateScore = () => {
-    let score = 0;
-    questions.forEach((question, index) => {
-      const answer = selectedAnswers[index];
-      if (answer) {
-        const optionIndex = question.options.indexOf(answer);
-        if (optionIndex !== -1) {
-          score += optionIndex;
-        }
-      }
-    });
-    setTotalScore(score);
-
-    let cond = "";
-    if (score <= 4) {
-      cond = "Kondisimu terlihat cukup stabil hari ini 😊";
-    } else if (score <= 9) {
-      cond = "Ada beberapa hal yang bikin kamu kepikiran 🌥️";
-    } else if (score <= 14) {
-      cond = "Sepertinya harimu cukup berat, yuk istirahat sejenak 🌀";
-    } else {
-      cond = "Kamu nggak sendiri. Cerita yuk, aku siap bantu kapan aja 🤝";
-    }
-    setCondition(cond);
-
-    // Check last question
-    const lastIndex = totalQuestions - 1;
-    const lastAnswer = selectedAnswers[lastIndex];
-    if (lastAnswer) {
-      const lastOptionIndex = questions[lastIndex].options.indexOf(lastAnswer);
-      if (lastOptionIndex >= 2) {
-        setSpecialMessage("Kamu penting dan berharga. Kalau kamu lagi merasa pengin nyakitin diri, coba tarik napas dulu. Aku sarankan untuk bicara dengan orang yang bisa dipercaya, atau hubungi bantuan profesional.");
-      } else {
-        setSpecialMessage("");
-      }
-    }
-  };
-
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     const storedGuestName = localStorage.getItem("guestName") || "Guest";
@@ -94,7 +62,7 @@ const Pertanyaan: React.FC = () => {
       setGuestName(storedGuestName);
     } else {
       axios
-        .get("http://localhost:5000/api/auth/user", {
+        .get(import.meta.env?.VITE_API_URL + "api/auth/user", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -115,7 +83,7 @@ const Pertanyaan: React.FC = () => {
     }
 
     axios
-      .get("http://localhost:5000/api/questions")
+      .get(import.meta.env?.VITE_API_URL + "api/questions")
       .then((response) => {
         if (response.data.status) {
           setQuestions(response.data.questions);
@@ -155,9 +123,18 @@ const Pertanyaan: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    calculateScore();
-
     const token = localStorage.getItem("authToken");
+
+    // >>> evaluasi skor & flag khusus
+    const { totalScore, interpretation, selfHarmHigh } = computeScoreAndFlags();
+    setIsSelfHarmHigh(selfHarmHigh);
+
+    // >>> simpan notice untuk halaman chat (bisa dipakai oleh chatbot)
+    if (selfHarmHigh) {
+      localStorage.setItem("notice:selfharm", "1");
+    } else {
+      localStorage.removeItem("notice:selfharm");
+    }
 
     if (!token) {
       setShowSuccessPopup(true);
@@ -167,13 +144,22 @@ const Pertanyaan: React.FC = () => {
     const session_id = localStorage.getItem("userId");
     const responses = questions.map((question, index) => ({
       question_id: question._id,
-      answer: selectedAnswers[index] || null,
+      answer: selectedAnswers[index] || null, // kirim teks jawaban seperti semula
+      // >>> opsional: ikutkan skor numerik agar BE bisa pakai
+      score: SCORE_MAP[selectedAnswers[index] || ""] ?? 0,
     }));
 
     axios
       .post(
-        "http://localhost:5000/api/results/save",
-        { session_id, responses },
+        import.meta.env?.VITE_API_URL + "api/results/save",
+        {
+          session_id,
+          responses,
+          // >>> opsional: ringkasan
+          totalScore,
+          interpretation,
+          selfHarmHigh,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -185,23 +171,29 @@ const Pertanyaan: React.FC = () => {
           setShowSuccessPopup(true);
         } else {
           console.error("Gagal menyimpan hasil");
+          setShowSuccessPopup(true); // tetap tampilkan ringkasan FE
         }
       })
       .catch((err) => {
         console.error(err);
+        setShowSuccessPopup(true); // tetap tampilkan ringkasan FE
       });
   };
 
   const handlePopupClose = () => {
     const isGuest = !localStorage.getItem("authToken");
-    if (isGuest) {
-      navigate("/tamu");
-    } else {
-      navigate("/chat");
-    }
+    // >>> arahkan dengan query jika perlu ditangkap chatbot
+    const target = isGuest ? "/tamu" : (isSelfHarmHigh ? "/chat?notice=selfharm" : "/chat");
+    navigate(target);
   };
 
 
+
+  // >>> tampilkan ringkasan skor & interpretasi di popup
+  const { totalScore, interpretation } = (() => {
+    if (questions.length === 0) return { totalScore: 0, interpretation: "" };
+    return computeScoreAndFlags();
+  })();
 
   return (
     <div className="pertanyaan min-h-screen w-full bg-theme-backgound relative overflow-hidden">
@@ -210,14 +202,17 @@ const Pertanyaan: React.FC = () => {
         <div className="w-full max-w-4xl mx-auto h-[90vh] flex flex-col ">
           <div className="bg-card rounded-3xl shadow-2xl overflow-hidden h-full flex flex-col">
             {/* Greeting Section */}
-            <div className="bg-header-gradient p-4 text-white relative overflow-hidden">
-              <div className="absolute inset-0 bg-header-gradient"></div>
+            <div className="p-4 text-white relative overflow-hidden">
+              <div className="absolute top-0 left-0 ml-4 mt-4 z-20">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="flex items-center hover:opacity-70 transition-opacity mr-4" aria-label="Kembali">
+                  <ChevronLeftIcon className="h-7 w-7 text-gray-800" />
+                </button>
+              </div>
               <div className="absolute top-0 right-0 w-16 h-16 bg-header-gradient2 rounded-full -mr-8 -mt-8"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-header-gradient2 rounded-full -ml-12 -mb-12"></div>
-              <div className="relative z-10 flex items-center gap-4">
-                <div className="p-3 icon-container-user rounded-full">
-                  <User className="h-6 w-6 text-gray-400" />
-                </div>
+              <div className="relative z-10 flex items-center gap-4 ml-16">
                 <div>
                   <h2 className="text-xl font-bold text-gray-600">
                     Hai, {sapaan || guestName}
@@ -252,85 +247,16 @@ const Pertanyaan: React.FC = () => {
                 </div>
               </div>
 
-              {/* Questions */}
-              {/* <div className="space-y-2 mb-4">
-                {questions.map((question, index) => (
-                  <div key={index} className="group">
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                      <div className="bg-question-header px-3 py-1 border-b">
-                        <h3 className="font-medium text-sm text-neutral-800 flex items-center gap-4">
-                          <div className="flex-shrink-0 w-6 h-6 icon-container-number text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                            {index + 1}
-                          </div>
-                          <span className="inline-block">
-                            {question.question}
-                          </span>
-                        </h3>
-                      </div>
-
-                      <div className="p-6">
-                        <div className="flex flex-col items-start gap-2">
-                          {question.options.map((option, optionIndex) => (
-                            <label
-                              key={optionIndex}
-                              className={`w-1/3 group/option flex text-xs text-gray-600 items-center p-2 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${selectedAnswers[index] === option
-                                  ? "option-selected shadow-lg"
-                                  : "option-default hover:option-default:hover"
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name={`question-${index}`}
-                                value={option}
-                                checked={selectedAnswers[index] === option}
-                                onChange={() =>
-                                  handleAnswerChange(index, option)
-                                }
-                                className="sr-only"
-                              />
-                              <div
-                                className={`relative w-5 h-5 rounded-full border-2 mr-2 flex items-center justify-center transition-all duration-300 ${selectedAnswers[index] === option
-                                    ? "radio-selected shadow-lg"
-                                    : "radio-default group-hover/option:radio-default:hover"
-                                  }`}
-                              >
-                                {selectedAnswers[index] === option && (
-                                  <div className="w-2 h-2 bg-white rounded-full animate-scale-in"></div>
-                                )}
-                                <div
-                                  className={`absolute inset-0 rounded-full transition-all duration-300 ${selectedAnswers[index] === option
-                                      ? "radio-ring"
-                                      : ""
-                                    }`}
-                                ></div>
-                              </div>
-                              <span
-                                className={`font-medium transition-colors duration-200 ${selectedAnswers[index] === option
-                                    ? "text-accent"
-                                    : "text-neutral group-hover/option:text-accent"
-                                  }`}
-                              >
-                                {option}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div> */}
-
-              {/* Questions (single, paged) */}
+              {/* Progress + Single question */}
               <div className="mb-4">
                 {/* Progress bar */}
                 {totalQuestions > 0 && (
                   <div className="mb-4">
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
-                      style={{ width: `${((currentQuestion + 1) / totalQuestions) * 100}%` }}
-                    />
+                      <div
+                        className="h-full bg-blue-600 transition-all duration-300"
+                        style={{ width: `${((currentQuestion + 1) / totalQuestions) * 100}%` }}
+                      />
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
                       Pertanyaan {currentQuestion + 1} dari {totalQuestions}
@@ -340,10 +266,10 @@ const Pertanyaan: React.FC = () => {
 
                 {totalQuestions > 0 && (
                   <div className="group">
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 overflow-hidden">
                       <div className="bg-question-header px-3 py-1 border-b">
                         <h3 className="font-medium text-sm text-neutral-800 flex items-center gap-4">
-                          <div className="flex-shrink-0 w-6 h-6 icon-container-number text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                          <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                             {currentQuestion + 1}
                           </div>
                           <span className="inline-block">
@@ -392,38 +318,16 @@ const Pertanyaan: React.FC = () => {
                 )}
               </div>
 
-
-              {/* Action Buttons */}
-              {/* <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                <button onClick={handleBackToMenu}>
-                  <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-                </button>
-
-                <button
-                  className="group flex items-center gap-3 bg-button-primary-gradient hover:bg-button-primary-gradient:hover text-white font-semibold py-2 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 relative overflow-hidden"
-                  onClick={handleSubmit}
-                >
-                  <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
-                  <CheckCircle className="h-5 w-5 relative z-10" />
-                  <span className="relative z-10">Submit Jawaban</span>
-                </button>
-              </div> */}
-
               {/* Action Buttons (paged nav) */}
               <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                {/* Back to menu (left) */}
-                <button onClick={handleBackToMenu} className="p-2 rounded-xl hover:bg-gray-50">
-                  <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-                </button>
 
+                <div></div>
                 {/* Prev / Next (right) */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={goPrev}
                     disabled={currentQuestion === 0}
-                    className={`px-4 py-2 rounded-xl border transition ${currentQuestion === 0
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:bg-gray-50"
+                    className={`px-4 py-2 rounded-xl border transition ${currentQuestion === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
                       }`}
                   >
                     Sebelumnya
@@ -432,14 +336,16 @@ const Pertanyaan: React.FC = () => {
                   <button
                     onClick={goNext}
                     disabled={!hasAnswerForCurrent}
-                    className={`group flex items-center gap-3 bg-button-primary-gradient hover:bg-button-primary-gradient:hover text-white font-semibold py-2 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 relative overflow-hidden ${!hasAnswerForCurrent ? "opacity-60 cursor-not-allowed" : ""
-                      }`}
+                    className={`flex items-center gap-3 px-5 py-2.5 rounded-xl
+    text-white text-sm md:text-base font-bold tracking-wide
+    bg-blue-600 hover:bg-blue-700 active:bg-blue-800
+    shadow-md hover:shadow-lg
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2
+    ${!hasAnswerForCurrent ? "opacity-70 cursor-not-allowed bg-blue-400 hover:bg-blue-400 shadow-none" : ""}
+  `}
                   >
-                    <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-                    <CheckCircle className="h-5 w-5 relative z-10" />
-                    <span className="relative z-10">
-                      {currentQuestion < totalQuestions - 1 ? "Berikutnya" : "Kirim Jawaban"}
-                    </span>
+                    <CheckCircle className="h-5 w-5" />
+                    <span>{currentQuestion < totalQuestions - 1 ? "Berikutnya" : "Kirim Jawaban"}</span>
                   </button>
                 </div>
               </div>
@@ -462,29 +368,29 @@ const Pertanyaan: React.FC = () => {
                     </div>
                     <div className="absolute -inset-4 success-ping rounded-full animate-ping"></div>
                   </div>
-                  <h2 className="text-3xl font-bold text-neutral-800 mb-3">
+                  <h2 className="text-3xl font-bold text-neutral-800 mb-2">
                     Berhasil!
                   </h2>
-                  <p className="text-neutral-light mb-4 text-lg">
-                    Terima kasih telah mengisi kuesioner dengan jujur
+
+                  {/* >>> Ringkasan skor & interpretasi */}
+                  <p className="text-neutral-700 mb-1 text-sm">
+                    Skor kamu hari ini: <b>{totalScore}</b>
                   </p>
-                  <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-indigo-600 mb-2">
-                        Skor Total: {totalScore}
-                      </div>
-                      <p className="text-neutral-700 mb-2">
-                        {condition}
+                  <p className="text-neutral-600 mb-4 text-sm">
+                    {interpretation}
+                  </p>
+
+                  {/* >>> Pesan khusus jika Q7 = 2 atau 3 */}
+                  {isSelfHarmHigh && (
+                    <div className="text-left mb-6 p-3 rounded-xl border-2 border-rose-200 bg-rose-50">
+                      <p className="text-sm text-rose-700">
+                        <b>Kamu penting dan berharga.</b> Kalau kamu lagi merasa pengin nyakitin diri, coba tarik napas dulu. Aku sarankan untuk bicara dengan orang yang bisa dipercaya, atau hubungi bantuan profesional.
                       </p>
-                      {specialMessage && (
-                        <p className="text-red-600 text-sm mt-4 p-3 bg-red-50 rounded-lg">
-                          {specialMessage}
-                        </p>
-                      )}
                     </div>
-                  </div>
+                  )}
+
                   <button
-                    className="w-full bg-success-gradient text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg"
+                    className="w-full bg-success-gradient hover:bg-success-gradient:hover text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     onClick={handlePopupClose}
                   >
                     Lanjutkan

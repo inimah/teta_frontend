@@ -17,7 +17,7 @@ const ForgotPassword = () => {
     setSuccessMessage("");
     setIsSubmitting(true);
 
-    Axios.post("http://localhost:5000/api/auth/forgot-password", {
+    Axios.post(import.meta.env?.VITE_API_URL + "api/auth/forgot-password", {
       email,
     })
       .then((response) => {
