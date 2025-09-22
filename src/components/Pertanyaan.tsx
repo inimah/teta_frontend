@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, User, Sparkles } from "lucide-react";
+import { CheckCircle, Sparkles } from "lucide-react";
+import {ChevronLeftIcon} from "@heroicons/react/24/outline";
 
 type Question = {
   _id: string;
@@ -12,7 +13,6 @@ type Question = {
 
 const Pertanyaan: React.FC = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState<string>("");
   const [sapaan, setSapaan] = useState<string>("");
   const [guestName, setGuestName] = useState<string>("Guest");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -128,6 +128,32 @@ const Pertanyaan: React.FC = () => {
       });
   }, [navigate]);
 
+  // >>> helper: hitung total skor & interpretasi
+  const computeScoreAndFlags = () => {
+    // total skor 0..21 (7 pertanyaan * 0..3)
+    const totalScore = questions.reduce((sum, _, idx) => {
+      const ans = selectedAnswers[idx];
+      const s = SCORE_MAP[ans ?? ""] ?? 0;
+      return sum + s;
+    }, 0);
+
+    let interpretation = "Kondisimu terlihat cukup stabil hari ini 😊"; // 0–4
+    if (totalScore >= 5 && totalScore <= 9) {
+      interpretation = "Ada beberapa hal yang bikin kamu kepikiran 🌥️";
+    } else if (totalScore >= 10 && totalScore <= 14) {
+      interpretation = "Sepertinya harimu cukup berat, yuk istirahat sejenak 🌀";
+    } else if (totalScore >= 15) {
+      interpretation = "Kamu nggak sendiri. Cerita yuk, aku siap bantu kapan aja 🤝";
+    }
+
+    // Q7 = index 6. Cek “Sering” (2) atau “Hampir setiap hari” (3).
+    const q7Ans = selectedAnswers[6];
+    const q7Score = SCORE_MAP[q7Ans ?? ""] ?? 0;
+    const selfHarmHigh = q7Score >= 2;
+
+    return { totalScore, interpretation, selfHarmHigh };
+  };
+
   const handleSubmit = () => {
     calculateScore();
 
@@ -175,14 +201,7 @@ const Pertanyaan: React.FC = () => {
     }
   };
 
-  const handleBackToMenu = () => {
-    const isGuest = !localStorage.getItem("authToken");
-    if (isGuest) {
-      navigate("/tamu");
-    } else {
-      navigate("/chat");
-    }
-  };
+
 
   return (
     <div className="pertanyaan min-h-screen w-full bg-theme-backgound relative overflow-hidden">

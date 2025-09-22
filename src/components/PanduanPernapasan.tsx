@@ -238,7 +238,14 @@ export default function PanduanPernapasan() {
   useEffect(() => {
     if (!playing || !voiceOn || !stageLabel) return;
     try {
+
+
       window.speechSynthesis?.cancel();
+
+      // turunkan volume musik saat voice berbicara
+      const a = bgAudioRef.current;
+      if (a && bgOn) a.volume = Math.min(a.volume ?? (bgVolume / 100), 0.25);
+
       const u = new SpeechSynthesisUtterance(stageLabel);
       u.lang = "id-ID"; // Set Indonesian language accent
       u.rate = 0.9;

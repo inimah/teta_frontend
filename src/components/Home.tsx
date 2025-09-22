@@ -1,8 +1,9 @@
-import axios from "axios";
+ import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserAuth } from "../context/AuthContext";
 import { UserIcon } from "@heroicons/react/24/solid";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { applyTheme } from "../themes/applyTheme";
 import { toast } from "react-toastify";
 import TetaIcon from "./TetaIcon";
@@ -56,7 +57,6 @@ const sortSessions = <
 const Home: React.FC = (): React.ReactElement => {
   const navigate = useNavigate();
   const { logOut } = UserAuth();
-  const [name, setName] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState<string>("");
   const [currentCategory, setCurrentCategory] = useState<string>("Hari ini");
@@ -293,7 +293,7 @@ const Home: React.FC = (): React.ReactElement => {
   // non-guest: fetch history
   useEffect(() => {
     if (localStorage.getItem("isGuest") === "true") {
-      setName(localStorage.getItem("guestName") || "Tamu");
+      // setName(localStorage.getItem("guestName") || "Tamu");
     }
 
     const userId = localStorage.getItem("userId");
@@ -502,7 +502,7 @@ const Home: React.FC = (): React.ReactElement => {
       const botText =
         response.data.answer && response.data.answer.trim() !== ""
           ? response.data.answer.trim()
-          : "Maaf, saya tidak mengerti pertanyaan Anda.";
+          : "Maaf, aku tidak mengerti pertanyaanmu.";
 
       const botMessage: Message = {
         id: Date.now().toString(),
@@ -684,24 +684,24 @@ const Home: React.FC = (): React.ReactElement => {
   `}
         >
           {/* Header */}
-          <div className="px-4 py-3 chat-sidebar flex flex-col items-center justify-center">
+          <div className="px-4 pt-0 pb-0 chat-sidebar flex flex-col items-center justify-center h-20">
             <TetaIcon
-              className="h-30 w-30 object-contain mb-2"
+              className="h-28 w-28 object-contain mb-1"
               alt="TETA"
             />
           </div>
 
           <div className="flex h-screen overflow-y-auto">
             <div className="w-64 h-full flex flex-col chat-sidebar">
-              <div className="grid grid-cols-1 gap-1 mt-2">
+              <div className="grid grid-cols-1 gap-0.25 mt-2">
                 {/* Eksplorasi */}
                 <div
-                  className={`group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center hover:scale-[1.02] nav-menu-item ${currentCategory === "Eksplorasi" ? " shadow-md" : " hover:shadow-sm"
+                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Eksplorasi" ? " shadow-md" : " hover:shadow-sm"
                     }`}
                   onClick={() => navigate("/eksplorasi")}
                 >
-                  <div className="h-8 w-8 mr-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 nav-menu-item-icon-special" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="h-10 w-10 mr-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                     </svg>
                   </div>
@@ -710,11 +710,12 @@ const Home: React.FC = (): React.ReactElement => {
 
                 {/* Cek Kondisi Hatimu */}
                 <div
-                  className="group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center nav-menu-item hover:scale-[1.02] hover:shadow-sm"
+                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Cek Kondisi Hatimu" ? " shadow-md" : " hover:shadow-sm"
+                    }`}
                   onClick={() => navigate("/pertanyaan")}
                 >
-                  <div className="h-8 w-8 mr-3  rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 nav-menu-item-icon-special" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <div className="h-10 w-10 mr-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -726,19 +727,17 @@ const Home: React.FC = (): React.ReactElement => {
                       />
                     </svg>
                   </div>
-                  <div className="text-sm font-medium  text-gray-600">Cek Kondisi Hatimu</div>
+                  <div className="text-sm font-medium text-gray-600">Cek Kondisi Hatimu</div>
                 </div>
 
                 {/* Chat Baru */}
                 <div
-                  className={`group cursor-pointer py-1 px-3 rounded-xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Chat baru" ? " shadow-md" : " hover:shadow-sm"
+                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Chat baru" ? " shadow-md" : " hover:shadow-sm"
                     }`}
                   onClick={() => handleCategoryClick("Chat baru")}
                 >
-                  <div className="h-8 w-8 mr-3  rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                  <div className="h-10 w-10 mr-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <PencilSquareIcon className="h-6 w-6 text-blue-400" />
                   </div>
                   <div className="text-sm font-medium text-gray-600">Chat Baru</div>
                 </div>
@@ -1368,7 +1367,7 @@ const Home: React.FC = (): React.ReactElement => {
                     className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full transition flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     disabled={inputMessage.trim() === ""}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform rotate-300" viewBox="0 0 24 24" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                     </svg>
                   </button>

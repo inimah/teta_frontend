@@ -319,7 +319,7 @@ body,
   letter-spacing: 0.03em !important;
 }
 .text-greeting {
-  color: #74c365; /* biru soft (Tailwind: blue-600) */
+  color: #1d4715; /* biru soft (Tailwind: blue-600) */
   font-weight: 600;
   font-family: "Poppins", "Inter", sans-serif !important;
 }

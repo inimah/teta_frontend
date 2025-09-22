@@ -352,7 +352,7 @@ body,
   transition: color 0.2s ease;
 }
 .text-greeting {
-  color: #7dd3fc; /* biru soft (Tailwind: blue-600) */
+  color: #584603; /* biru soft (Tailwind: blue-600) */
   font-weight: 600;
   font-family: "Poppins", "Inter", sans-serif !important;
 }
