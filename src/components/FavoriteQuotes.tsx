@@ -24,7 +24,7 @@ const FavoriteQuotes = () => {
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`/api/user-favs/${userId}`)
+    fetch(import.meta.env?.VITE_API_URL +  `api/user-favs/${userId}`)
       .then((res) => res.json())
       .then((data) => {
         setFavorites(data);
