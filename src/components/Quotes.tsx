@@ -113,7 +113,7 @@ const Quotes: React.FC = () => {
     setLoading(true);
     setHasTried(true);
     try {
-      const res = await fetch(`/api/quotes?category_name=${categoryName}`);
+      const res = await fetch(import.meta.env?.VITE_API_URL +  `api/quotes?category_name=${categoryName}`);
       const data: Quote[] = await res.json();
       setQuotes(Array.isArray(data) ? data : [data].filter(Boolean));
       setCurrentIndex(0);
@@ -227,7 +227,7 @@ const handleUnfavorite = async (quoteId: string): Promise<void> => {
                 <button
                   key={m.label}
                   className={`
-                    flex flex-col items-center justify-center 
+                    flex flex-col items-center justify-center
                     p-4 rounded-2xl border-2 transition-all duration-300
                     hover:scale-105 hover:shadow-lg
                     ${
