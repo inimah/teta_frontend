@@ -12,6 +12,7 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    allowedHosts: ['temancerita.test', 'temancerita.online'],
     // headers: {
     //   "Cross-Origin-Opener-Policy": "same-origin",
     //   "Cross-Origin-Embedder-Policy": "require-corp",
