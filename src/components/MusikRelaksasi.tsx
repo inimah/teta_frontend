@@ -19,7 +19,7 @@ import {
  */
 
 // ===== Config API =====
-const API_BASE = window.location.origin;
+const API_BASE = import.meta.env?.VITE_API_URL;
 
 // ---- Types ----
 type Technique = {
@@ -45,7 +45,7 @@ const TECHNIQUES: Technique[] = [
     minutes: 5,
     icon: "note",
     // fallback jika playlist dari API kosong
-    track: "/audio/Aylex - Sounds of Nature (freetouse.com).mp3",
+    track: "audio/Aylex - Sounds of Nature (freetouse.com).mp3",
     color: "red",
   },
 ];
@@ -117,7 +117,7 @@ export default function Relaksasi() {
     (async () => {
       try {
         setLoadingTracks(true);
-        const r = await fetch(`${API_BASE}/api/relax-tracks`);
+        const r = await fetch(`${API_BASE}api/relax-tracks`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const json = await r.json();
         const data: Track[] = Array.isArray(json?.tracks) ? json.tracks : [];
