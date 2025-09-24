@@ -470,7 +470,7 @@ const Home: React.FC = (): React.ReactElement => {
       //   userId: localStorage.getItem("userId"),
       // });
 
-      const response = await axios.post("http://localhost:5006/chat", {
+      const response = await axios.post(import.meta.env?.VITE_CHAT_URL + "chat", {
         messages: allMessages,
         sessionId: sid,
         userId: localStorage.getItem("userId"),
