@@ -50,7 +50,6 @@ const Login = () => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const googleToken = credential?.idToken;
 
-      console.log("Google Token:", googleToken);
       const response = await axios.post(
         import.meta.env?.VITE_API_URL + "api/auth/google-login",
         {
@@ -65,15 +64,8 @@ const Login = () => {
       if (response.status === 200) {
         const token = response.data.token;
         const user = response.data.user;
-        console.log("User object (raw):", user);
-        console.log("User object keys:", Object.keys(user));
-        console.log("Role user:", user.role);
 
         if (!user || !user.userId || user.id) {
-          console.error(
-            "User ID tidak ditemukan dalam respons backend:",
-            response.data
-          );
           toast.error("Terjadi kesalahan saat login. Silakan coba lagi.");
           return;
         }
@@ -84,9 +76,6 @@ const Login = () => {
         localStorage.setItem("role", user.role);
         localStorage.setItem("isGuest", "false");
 
-        console.log("Response dari backend:", response.data);
-        console.log("User object:", response.data.user);
-        console.log("Role user:", response.data.user.role);
         if (user?.role === "admin") {
           navigate("/admin/dashboard");
         } else if (user?.role === "user") {

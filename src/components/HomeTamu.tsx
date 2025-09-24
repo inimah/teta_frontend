@@ -62,7 +62,7 @@ const HomeTamu: React.FC = (): React.ReactElement => {
     try {
       setIsBotTyping(true);
 
-      const response = await axios.post("http://localhost:5006/chat", {
+      const response = await axios.post(import.meta.env?.VITE_CHAT_URL +  "chat", {
         messages: [
           ...messages.map((m) => ({ role: m.isUser ? "user" : "assistant", content: m.text })),
           { role: "user", content: messageToSend },
@@ -116,7 +116,7 @@ const HomeTamu: React.FC = (): React.ReactElement => {
         )}
         <div
           className={`
-    z-30 h-full w-64 chat-sidebar flex flex-col 
+    z-30 h-full w-64 chat-sidebar flex flex-col
     transition-transform duration-300
     ${sidebarOpen ? "fixed top-0 left-0 translate-x-0" : "fixed -translate-x-full"}
     md:static md:translate-x-0 md:z-0
