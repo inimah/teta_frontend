@@ -59,8 +59,6 @@ const Login = () => {
         }
       );
 
-      console.log("Response dari backend:", response.data);
-
       if (response.status === 200) {
         const token = response.data.token;
         const user = response.data.user;
@@ -85,7 +83,6 @@ const Login = () => {
         }
       }
     } catch (error: any) {
-      console.error("Google Sign-In Error:", error);
       toast.error("Login gagal. Silakan coba lagi.");
     }
   };

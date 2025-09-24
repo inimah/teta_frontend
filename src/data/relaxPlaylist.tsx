@@ -12,7 +12,7 @@ export const RELAX_PLAYLIST: RelaxTrack[] = [
     id: "heritage",
     title: "Heritage",
     artist: "Pufino",
-    src: "/audio/Pufino - Heritage (freetouse.com).mp3",
+    src: "audio/Pufino - Heritage (freetouse.com).mp3",
     sourceUrl: "https://freetouse.com/music/pufino/heritage",
     // Free To Use/CC-BY style: butuh kredit
     attribution:
@@ -22,7 +22,7 @@ export const RELAX_PLAYLIST: RelaxTrack[] = [
     id: "imbolc",
     title: "Imbolc",
     artist: "Zambolino",
-    src: "/audio/Zambolino - Imbolc (freetouse.com).mp3",
+    src: "audio/Zambolino - Imbolc (freetouse.com).mp3",
     sourceUrl: "https://freetouse.com/music/zambolino/imbolc",
     attribution:
       'Music: "Imbolc" by Zambolino — Free To Use Music (credit required).',
@@ -31,7 +31,7 @@ export const RELAX_PLAYLIST: RelaxTrack[] = [
     id: "meditation-spiritual",
     title: "Meditation Spiritual Music",
     artist: "lkoliks",
-    src: "/audio/meditation-spiritual-music-330169.mp3",
+    src: "audio/meditation-spiritual-music-330169.mp3",
     sourceUrl:
       "https://pixabay.com/music/ambient-meditation-spiritual-music-330169/",
     // Pixabay License: attribution tidak wajib, tetap boleh dicantumkan
@@ -41,7 +41,7 @@ export const RELAX_PLAYLIST: RelaxTrack[] = [
     id: "sounds of nature",
     title: "sounds of nature",
     artist: "aylex",
-    src: "/audio/Aylex - Sounds of Nature (freetouse.com).mp3",
+    src: "audio/Aylex - Sounds of Nature (freetouse.com).mp3",
     sourceUrl: "https://freetouse.com/music/aylex/sounds-of-nature",
     // Free To Use/CC-BY style: butuh kredit
     attribution:
@@ -51,7 +51,7 @@ export const RELAX_PLAYLIST: RelaxTrack[] = [
     id: "Libellule",
     title: "Libellule",
     artist: "Guillermo Guareschi",
-    src: "/audio/Guillermo Guareschi - Libellule (freetouse.com).mp3",
+    src: "audio/Guillermo Guareschi - Libellule (freetouse.com).mp3",
     sourceUrl: "https://freetouse.com/music/guillermo-guareschi/libellule",
     // Free To Use/CC-BY style: butuh kredit
     attribution:
@@ -61,7 +61,7 @@ export const RELAX_PLAYLIST: RelaxTrack[] = [
     id: "Wallflower",
     title: "Wallflower",
     artist: "Epic Spectrum",
-    src: "/audio/Epic Spectrum - Wallflower (freetouse.com).mp3",
+    src: "audio/Epic Spectrum - Wallflower (freetouse.com).mp3",
     sourceUrl: "https://freetouse.com/music/epic-spectrum/wallflower",
     // Free To Use/CC-BY style: butuh kredit
     attribution:
