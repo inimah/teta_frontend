@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&family=Caveat:wght@400;500;600&display=swap');
 
 /* fresh.css */
 
@@ -80,6 +80,24 @@ body,
   color: #fff;
   box-shadow: 0 2px 8px rgba(78, 205, 196, 0.2);
 }
+.chat-riwayat-text {
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(to right, transparent, #c9d6e4, transparent);
+}
+
+.chat-riwayat-label {
+  font-size: 1rem !important;
+  text-transform: uppercase;
+  font-weight: 600 !important;
+  margin-left: 0.75rem;
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  color: #6c757d;
+  letter-spacing: 0.05em;
+}
+
 
 /* 4. Card & Input */
 .login-card {
@@ -201,6 +219,88 @@ body,
 }
 ::-webkit-scrollbar {
   display: none;
+}
+
+/* MASUK TANPA LOGIN */
+.login-guest-popup {
+  background: #ecf7e5 !important;
+  border: 2px solid #97a97c;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(168, 230, 207, 0.18);
+  color: #1a7b3e;
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+  min-width: 320px;
+  max-width: 95vw;
+}
+
+.login-guest-popup h2 {
+  color: #43270f;
+  /* font-weight: 700; */
+  font-size: 12px;
+  font-family: "Oswald", sans-serif;
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.tamu-form {
+  background: #fffde7 !important;
+  color: #495057 !important;
+  border: 1.5px solid #ffe135 !important;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 1rem;
+  font-family: inherit;
+  font-size: 12px;
+  transition: box-shadow 0.2s, border 0.2s;
+  font-family: "Oswald", sans-serif;
+}
+
+.login-guest-input {
+  background: #f7f4cd !important;
+  color: #b88a3a !important;
+  border: 1.5px solid #ffe135 !important;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+
+.login-guest-input::placeholder {
+  color: #b88a3a;
+  opacity: 0.7;
+}
+
+.login-guest-btn {
+  background: linear-gradient(135deg, #f0d982 0%, #a8c4d4 100%);
+  color: #43270f;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(184, 138, 58, 0.08);
+}
+
+.login-guest-btn:hover {
+  background: linear-gradient(135deg, #ffe135 0%, #8bb5c9 100%);
+  color: #b88a3a;
+}
+
+.login-guest-btn-cancel {
+  background: #ffe0b2;
+  color: #b88a3a;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  transition: background 0.2s;
+}
+
+.login-guest-btn-cancel:hover {
+  background: #f7f4cd;
 }
 
 /* 11. Home Page Card */
@@ -1154,4 +1254,266 @@ body,
 
 .fav-pagination-text {
   color: #1d4ed8; /* text-blue-700 */
+}
+
+/* 9. Chat History */
+.pesan-history {
+  color: #b88a3a !important;
+  font-family: "Quicksand", "Montserrat", "Poppins", "Comic Sans MS", cursive,
+    sans-serif;
+}
+
+/* 10. Scrollbar */
+.max-h-32::-webkit-scrollbar {
+  width: 0 !important;
+  background: transparent;
+}
+.max-h-32 {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* CHAT */
+.chat-emot {
+  font-family: "Nunito", sans-serif;
+}
+.chat-input-pesan {
+  font-family: "Nunito", sans-serif;
+}
+
+.card-flower-0 {
+  background: #ffe4e6 !important;
+  border: 2px solid #fb7185 !important;
+}
+.card-flower-1 {
+  background: #f3e8ff !important;
+  border: 2px solid #c084fc !important;
+}
+.card-flower-2 {
+  background: #f0fdf4 !important;
+  border: 2px solid #34d399 !important;
+}
+.card-flower-3 {
+  background: #fef3c7 !important;
+  border: 2px solid #fbbf24 !important;
+}
+.card-flower-4 {
+  background: #e0e7ff !important;
+  border: 2px solid #6366f1 !important;
+}
+/* flower.css - Tema Flower */
+
+/* Modal Background */
+.detail-bg {
+  background: #fff !important;
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #d5ddef;
+  font-family: "Poppins", sans-serif;
+
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* Close Button */
+.detail-close-btn {
+  color: rgb(244, 114, 182);
+  transition: color 0.2s ease;
+}
+
+.detail-close-btn:hover {
+  color: rgb(219, 39, 119);
+}
+
+/* Title */
+.detail-title {
+  color: #32769b !important;
+}
+
+/* Category and Source Info */
+.detail-kat-text {
+  color: #6c757d;
+  font-weight: 200;
+}
+
+/* Source Link */
+.detail-link {
+  color: #0197f6;
+  transition: color 0.2s ease;
+  font-weight: 400;
+}
+
+.flower-link:hover {
+  color: rgb(29, 78, 216);
+}
+
+/* Content Text */
+.flower-content {
+  color: rgb(55, 65, 81);
+  font-weight: 500;
+  line-height: 1.7;
+}
+
+/* Tags */
+.flower-tag {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(55, 65, 81);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.flower-tag:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.flower-tag-1 {
+  background: rgba(147, 197, 253, 0.6);
+  border: 1px solid rgba(147, 197, 253, 0.8);
+}
+
+.flower-tag-2 {
+  background: rgba(254, 215, 170, 0.6);
+  border: 1px solid rgba(254, 215, 170, 0.8);
+}
+
+.flower-tag-3 {
+  background: rgba(244, 114, 182, 0.5);
+  border: 1px solid rgba(244, 114, 182, 0.7);
+  color: rgb(255, 255, 255);
+}
+
+.flower-tag-4 {
+  background: rgba(134, 239, 172, 0.6);
+  border: 1px solid rgba(134, 239, 172, 0.8);
+}
+
+.flower-tag-5 {
+  background: rgba(196, 181, 253, 0.6);
+  border: 1px solid rgba(196, 181, 253, 0.8);
+}
+
+.quote-judul {
+  font-family: "Fredoka", cursive;
+  font-weight: 600;
+  font-size: 20px;
+  color: #e3aa56;
+}
+.mood-btn {
+  display: flex;
+  align-items: center;
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.02em !important;
+  color: #4b5563; /* abu-abu gelap (teks di gambar) */
+  border: 1px solid #e5e7eb; /* abu netral sangat soft */
+  background-color: #ffffff;
+  border-radius: 9999px; /* full rounded */
+  padding: 6px 14px;
+  min-width: unset; /* biarkan otomatis sesuai konten */
+  min-height: 42px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* lebih soft */
+  transition: background 0.2s, border 0.2s, transform 0.15s;
+}
+
+.mood-btn:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  transform: scale(1.02);
+}
+
+.mood-btn.selected,
+.mood-btn:active {
+  background: #fff8e1;
+  border: 1.5px solid #ffd54f;
+  color: #374151;
+  transform: scale(1.04);
+}
+
+.mood-btn .mood-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
+  box-shadow: none;
+  margin-right: 6px;
+}
+
+/* fav-theme.css */
+
+.chat-input-pesan input {
+  font-family: "Poppins", "Inter", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.02em !important;
+  color: #b88a3a !important;
+}
+
+/* Warna background halaman */
+.fav-bg {
+  background-color: #fff;
+  border: 1.5px solid #a8c4d4; /* border-gray-200 */
+}
+
+/* Header text */
+.fav-header-title {
+  color: #5190a2; /* text-blue-800 */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* drop-shadow */
+}
+
+/* Border bawah header */
+.fav-header-border {
+  border-bottom: 1px solid #a8c4d4; /* border-blue-400 */
+  padding-bottom: 0.25rem;
+}
+
+/* Card quote */
+.fav-quote-card {
+  background-color: white;
+  border-left: 4px solid #dee8f1; /* border-blue-300 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Icon kutip di belakang */
+.fav-quote-icon {
+  color: #f0d982; /* text-blue-200 */
+  opacity: 0.4;
+}
+
+/* Isi quote */
+.fav-quote-text {
+  color: #374151; /* text-gray-700 */
+}
+
+/* Penulis */
+.fav-quote-author {
+  color: #e399ad; /* text-blue-700 */
+}
+
+/* Tombol pagination */
+.fav-btn-prev {
+  background-color: #e1ecee; /* bg-blue-200 */
+  color: #5190a2; /* text-blue-700 */
+}
+
+.fav-btn-next {
+  background-color: #5190a2; /* bg-blue-500 */
+  color: white;
+}
+
+.fav-pagination-text {
+  color: #1d4ed8; /* text-blue-700 */
+}
+
+/* Font Caveat for specific text */
+.font-caveat {
+  font-family: 'Caveat', cursive;
+  font-size: 1.4em;
 }

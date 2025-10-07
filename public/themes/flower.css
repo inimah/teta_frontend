@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&display=swap');
-
-/* fresh.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&family=Caveat:wght@400;500;600&display=swap');
 
 /* 1. Warna dasar halaman */
 body,
@@ -344,7 +342,6 @@ body,
 .chat-header {
   background: #fff !important;
   color: #efc6a1 !important;
-  font-family: "Caveat", cursive;
   /* border-bottom: 1.5px solid #d5d5d8 !important; */
 }
 .burger-icon {
@@ -1092,4 +1089,10 @@ body,
 
 .fav-pagination-text {
   color: #1d4ed8; /* text-blue-700 */
+}
+
+/* Font Caveat for specific text */
+.font-caveat {
+  font-family: 'Caveat', cursive;
+  font-size: 1.4em;
 }

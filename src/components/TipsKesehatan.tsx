@@ -198,7 +198,7 @@ const TipsKesehatan: React.FC = () => {
                   }
                 </span>
 
-                <h4 className="text-xl font-bold detail-title tracking-tight text-center mb-2">
+                <h4 className="text-lg font-bold detail-title tracking-tight text-center mb-2">
                   {selectedTip.judul}
                 </h4>
 
@@ -224,7 +224,7 @@ const TipsKesehatan: React.FC = () => {
                 </div>
 
                 <div
-                  className="flower-content mb-3 whitespace-pre-line flex-1 leading-relaxed text-justify"
+                  className="flower-content text-sm mb-3 whitespace-pre-line flex-1 leading-relaxed text-justify"
                   dangerouslySetInnerHTML={{ __html: selectedTip.isi_konten }}
                 />
 

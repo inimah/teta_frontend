@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import { FaceSmileIcon } from "@heroicons/react/24/outline";
 import { applyTheme } from "../themes/applyTheme";
 import TetaIcon from "./TetaIcon";
 
@@ -62,7 +63,7 @@ const HomeTamu: React.FC = (): React.ReactElement => {
     try {
       setIsBotTyping(true);
 
-      const response = await axios.post(import.meta.env?.VITE_CHAT_URL +  "chat", {
+      const response = await axios.post(import.meta.env?.VITE_CHAT_URL +  "chat/netmind", {
         messages: [
           ...messages.map((m) => ({ role: m.isUser ? "user" : "assistant", content: m.text })),
           { role: "user", content: messageToSend },
@@ -93,10 +94,6 @@ const HomeTamu: React.FC = (): React.ReactElement => {
         },
       ]);
     }
-  };
-
-  const handleEmotionClick = async (emotion: string): Promise<void> => {
-    await handleSendMessage(`Saya merasa ${emotion}`);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent): void => {
@@ -215,14 +212,12 @@ const HomeTamu: React.FC = (): React.ReactElement => {
             <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center ">
               {messages.length === 0 ? (
                 <>
-                  <h3 className="text-2xl font-semibold mb-4 mt-28 chat-title">
-                    Bagaimana perasaanmu
+                  <h3 className="text-2xl font-semibold mb-4 mt-28 chat-title flex items-center">
+                    <FaceSmileIcon className="h-8 w-8 mr-2 text-yellow-500" />
+                    Hai, aku Teta - Teman Ceritamu
                   </h3>
-                  <div className="flex flex-wrap justify-center gap-4 mb-8 chat-emot">
-                    <button onClick={() => handleEmotionClick("senang")} className="bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😁 Senang</button>
-                    <button onClick={() => handleEmotionClick("sedih")} className="bg-gradient-to-r from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😔 Sedih</button>
-                    <button onClick={() => handleEmotionClick("marah")} className="bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😡 Marah</button>
-                    <button onClick={() => handleEmotionClick("cemas")} className="bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">🥶 Cemas</button>
+                  <div className="text-center text-gray-600 mb-8 max-w-md">
+                    Ini adalah ruang aman untuk berbagi cerita, dan aku siap mendengarkan
                   </div>
                 </>
               ) : (
@@ -272,25 +267,25 @@ const HomeTamu: React.FC = (): React.ReactElement => {
             {/* Input area */}
             <div className="p-6 chat-section mt-6">
               <div className="max-w-4xl mx-auto">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 rounded-full shadow-md border border-gray-300 bg-gray-100 overflow-hidden transition chat-input-pesan">
-                    <input
-                      type="text"
-                      placeholder="Tulis pesan disini..."
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      autoComplete="off"
-                      className="w-full py-2 px-5 bg-transparent focus:outline-none text-gray-600 placeholder-gray-400"
-                    />
-                  </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Tulis ceritamu disini..."
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    autoComplete="off"
+                    className="w-full py-2 px-5 pr-12 rounded-full shadow-md border border-gray-300 bg-gray-100 focus:outline-none text-gray-600 placeholder-gray-400 text-sm"
+                  />
                   <button
                     onClick={() => handleSendMessage()}
-                    className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full transition flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-black hover:bg-gray-900 text-white p-1.5 rounded-full transition flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={inputMessage.trim() === ""}
+                    aria-label="Send message"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-up">
+                      <line x1="12" y1="19" x2="12" y2="5" />
+                      <polyline points="5 12 12 5 19 12" />
                     </svg>
                   </button>
                 </div>

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserAuth } from "../context/AuthContext";
 import { UserIcon } from "@heroicons/react/24/solid";
+import { FaceSmileIcon } from "@heroicons/react/24/outline";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { applyTheme } from "../themes/applyTheme";
 import { toast } from "react-toastify";
@@ -68,7 +69,7 @@ const Home: React.FC = (): React.ReactElement => {
   const [theme] = useState("netral");
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const [showAllTodayChats, setShowAllTodayChats] = useState(false);
+
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<{
     _id: string;
@@ -265,11 +266,7 @@ const Home: React.FC = (): React.ReactElement => {
           }
           // localStorage.setItem("name", firstWord(userFromResponse?.name || ""));
 
-          setMessages([]);
-          setCurrentChatId(null);
-          setCurrentSessionId(null);
-          setCurrentCategory("Hari ini");
-          localStorage.removeItem("currentSessionId");
+          // Removed chat state reset to prevent switching to new chat mode during idle verification
         } else {
           toast.error("Token expired. Silakan login kembali.");
           localStorage.removeItem("authToken");
@@ -359,10 +356,6 @@ const Home: React.FC = (): React.ReactElement => {
   useEffect(() => {
     if (currentUser?._id) {
       fetchChatHistory(currentUser._id);
-      setMessages([]);
-      setCurrentChatId(null);
-      setCurrentSessionId(null);
-      setCurrentCategory("Hari ini");
     }
   }, [currentUser]);
 
@@ -470,7 +463,7 @@ const Home: React.FC = (): React.ReactElement => {
       //   userId: localStorage.getItem("userId"),
       // });
 
-      const response = await axios.post(import.meta.env?.VITE_CHAT_URL + "chat", {
+      const response = await axios.post(import.meta.env?.VITE_CHAT_URL + "chat/netmind", {
         messages: allMessages,
         sessionId: sid,
         userId: localStorage.getItem("userId"),
@@ -533,10 +526,6 @@ const Home: React.FC = (): React.ReactElement => {
   };
 
 
-  const handleEmotionClick = async (emotion: string): Promise<void> => {
-    await handleSendMessage(`Saya merasa ${emotion}`);
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent): void => {
     if (e.key === "Enter") handleSendMessage();
   };
@@ -550,33 +539,6 @@ const Home: React.FC = (): React.ReactElement => {
     }
   };
 
-  // D) (Optional) categorizeChats: use same timestamp logic as sorter
-  const categorizeChats = () => {
-    const now = Date.now();
-    const todayChats: typeof chatHistory = [];
-    const sevenDaysChats: typeof chatHistory = [];
-    const thirtyDaysChats: typeof chatHistory = [];
-
-    const unique = new Set<string>();
-    sortSessions(chatHistory).forEach((chat) => {
-      if (unique.has(chat.sessionId)) return;
-      unique.add(chat.sessionId);
-
-      const ms = toMs(
-        chat.lastUpdated ?? (chat as any).updatedAt ?? chat.created ?? (chat as any).createdAt
-      );
-      const diffDays = Math.floor(Math.abs(now - (ms === -Infinity ? 0 : ms)) / (1000 * 60 * 60 * 24));
-
-      if (diffDays < 7) todayChats.push(chat);
-      else if (diffDays < 30) sevenDaysChats.push(chat);
-      else thirtyDaysChats.push(chat);
-    });
-
-    return { todayChats, sevenDaysChats, thirtyDaysChats };
-  };
-
-
-  const { sevenDaysChats, thirtyDaysChats } = categorizeChats();
 
   const loadChat = (sessionId: string) => {
     const selected = chatHistory.find((c) => c.sessionId === sessionId);
@@ -737,24 +699,24 @@ const Home: React.FC = (): React.ReactElement => {
               </div>
 
               {/* Hanya sesi yang sudah berisi pesan yang tampil (karena kita tidak pernah push sesi kosong) */}
-              <div className="space-y-1 max-h-[calc(90vh-200px)]" style={{ overflowY: activeDropdown ? 'visible' : 'auto' }}>
+              <div className="space-y-1 flex-1 overflow-auto mb-4">
 
 
                 {currentCategory === "Hari ini" && (
                   <div className="ml-4 mt-0.5 ">
-                    {(showAllTodayChats ? chatHistory : chatHistory.slice(0, 5)).map((chat, index) => (
+                    {chatHistory.map((chat, index) => (
                       <div
                         key={`${chat.sessionId}-${index}`}
                         className="py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between hover:bg-gray-50 t text-gray-600 group"
                       >
                           <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
                             <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-800" fill="currentColor" viewBox="0 0 24 24" stroke="none">
+                                <circle cx="12" cy="12" r="6" />
                               </svg>
                             </div>
                           <div
-                            className="truncate text-xs flex-1"
+                            className="truncate text-sm flex-1"
                             onDoubleClick={() => {
                               setEditingSessionId(chat.sessionId);
                               setEditingTitle(chat.title || "");
@@ -804,7 +766,7 @@ const Home: React.FC = (): React.ReactElement => {
                           </div>
 
                           {activeDropdown === chat.sessionId && (
-                            <div ref={dropdownRef} className={`absolute right-0 ${index === (showAllTodayChats ? chatHistory : chatHistory.slice(0, 5)).length - 1 ? 'bottom-0 mb-1' : 'mt-1'} w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden`}>
+                            <div ref={dropdownRef} className={`absolute right-0 ${index === chatHistory.length - 1 ? 'top-full mt-1' : 'mt-1'} w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden`}>
                               <div
                                 className="px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
                                 onClick={() => {
@@ -848,249 +810,9 @@ const Home: React.FC = (): React.ReactElement => {
                         </div>
                       </div>
                     ))}
-                    {chatHistory.length > 5 && !showAllTodayChats && (
-                      <button
-                        className="text-xs text-blue-500 mt-2 hover:underline"
-                        onClick={() => setShowAllTodayChats(true)}
-                      >
-                        Lihat selengkapnya
-                      </button>
-                    )}
                   </div>
                 )}
-
-                {/* 7 hari & 30 hari (dipertahankan, list sudah terurut descending) */}
-                {sevenDaysChats.length > 0 && (
-                  <div
-                    className={`cursor-pointer py-2 px-3 rounded-lg transition-all duration-300 flex items-center group hover:scale-[1.01] ${currentCategory === "7 hari yang lalu"
-                      ? "bg-gradient-to-r from-orange-50 to-yellow-50 text-gray-700 border border-orange-100 shadow-sm"
-                      : "hover:bg-gradient-to-r hover:from-gray-50 hover:to-orange-50 text-gray-600"
-                      }`}
-                    onClick={() => handleCategoryClick("7 hari yang lalu")}
-                  >
-                    <div className="h-6 w-6 mr-2 bg-orange-100 rounded-md flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium">7 hari lalu</span>
-                    <div className="ml-auto">
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${currentCategory === "7 hari yang lalu" ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-
-                {currentCategory === "7 hari yang lalu" &&
-                  sevenDaysChats.length > 0 && (
-                    <div className="ml-4 mt-0.5 max-h-32 overflow-y-auto hide-scrollbar">
-                      {sevenDaysChats.map((chat, index) => (
-                        <div
-                          key={`${chat.sessionId}-${index}`}
-                          className="py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between hover:bg-gray-50 text-gray-600 group"
-                        >
-                          <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
-                            <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                              </svg>
-                            </div>
-                            <div
-                              className="truncate text-xs flex-1"
-                              onDoubleClick={() => {
-                                setEditingSessionId(chat.sessionId);
-                                setEditingTitle(chat.title || "");
-                              }}
-                              onContextMenu={(e) => {
-                                e.preventDefault();
-                                setActiveDropdown(chat.sessionId);
-                              }}
-                            >
-                              {editingSessionId === chat.sessionId ? (
-                                <input
-                                  type="text"
-                                  value={editingTitle}
-                                  autoFocus
-                                  className="w-full px-1 py-0.5 rounded border border-blue-300 text-xs"
-                                  onChange={(e) => setEditingTitle(e.target.value)}
-                                  onBlur={async () => {
-                                    await handleRenameInline(chat.sessionId, editingTitle);
-                                    setEditingSessionId(null);
-                                  }}
-                                  onKeyDown={async (e) => {
-                                    if (e.key === "Enter") {
-                                      await handleRenameInline(chat.sessionId, editingTitle);
-                                      setEditingSessionId(null);
-                                    } else if (e.key === "Escape") {
-                                      setEditingSessionId(null);
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                chat.title
-                              )}
-                            </div>
-                          </div>
-                          {/* dropdown mini */}
-                          <div className="relative flex-shrink-0">
-                            <div
-                              className="p-1 text-gray-600 hover:text-gray-600 hover:bg-gray-100 rounded cursor-pointer transition-colors"
-                              onClick={() =>
-                                setActiveDropdown(activeDropdown === chat.sessionId ? null : chat.sessionId)
-                              }
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
-                              </svg>
-                            </div>
-                            {activeDropdown === chat.sessionId && (
-                              <div className={`absolute right-0 ${index === sevenDaysChats.length - 1 ? 'bottom-0 mb-1' : 'mt-1'} w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden`}>
-                                <div
-                                  className="px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors"
-                                  onClick={() => {
-                                    setActiveDropdown(null);
-                                    setEditingSessionId(chat.sessionId);
-                                    setEditingTitle(chat.title || "");
-                                  }}
-                                >
-                                  Rename
-                                </div>
-                                <div
-                                  className="px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
-                                  onClick={() => {
-                                    setActiveDropdown(null);
-                                    handleDelete(chat.sessionId);
-                                  }}
-                                >
-                                  Delete
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                {thirtyDaysChats.length > 0 && (
-                  <div
-                    className={`cursor-pointer py-2 px-3 rounded-lg transition-all duration-300 flex items-center group hover:scale-[1.01] ${currentCategory === "30 hari yang lalu"
-                      ? "bg-gradient-to-r from-purple-50 to-pink-50 text-gray-700 border border-purple-100 shadow-sm"
-                      : "hover:bg-gradient-to-r hover:from-gray-50 hover:to-purple-50 text-gray-600"
-                      }`}
-                    onClick={() => handleCategoryClick("30 hari yang lalu")}
-                  >
-                    <div className="h-6 w-6 mr-2 bg-purple-100 rounded-md flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium">30 hari lalu</span>
-                    <div className="ml-auto">
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${currentCategory === "30 hari yang lalu" ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-                {currentCategory === "30 hari yang lalu" &&
-                  thirtyDaysChats.length > 0 && (
-                    <div className="ml-4 mt-0.5  max-h-32 overflow-y-auto relative overflow-visible">
-                      {thirtyDaysChats.map((chat, index) => (
-                        <div
-                          key={`${chat.sessionId}-${index}`}
-                          className="py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between hover:bg-gray-50  group"
-                        >
-                          <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
-                            <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                              </svg>
-                            </div>
-                            <div
-                              className="truncate text-xs flex-1"
-                              onDoubleClick={() => {
-                                setEditingSessionId(chat.sessionId);
-                                setEditingTitle(chat.title || "");
-                              }}
-                              onContextMenu={(e) => {
-                                e.preventDefault();
-                                setActiveDropdown(chat.sessionId);
-                              }}
-                            >
-                              {editingSessionId === chat.sessionId ? (
-                                <input
-                                  type="text"
-                                  value={editingTitle}
-                                  autoFocus
-                                  className="w-full px-1 py-0.5 rounded border border-blue-300 text-xs"
-                                  onChange={(e) => setEditingTitle(e.target.value)}
-                                  onBlur={async () => {
-                                    await handleRenameInline(chat.sessionId, editingTitle);
-                                    setEditingSessionId(null);
-                                  }}
-                                  onKeyDown={async (e) => {
-                                    if (e.key === "Enter") {
-                                      await handleRenameInline(chat.sessionId, editingTitle);
-                                      setEditingSessionId(null);
-                                    } else if (e.key === "Escape") {
-                                      setEditingSessionId(null);
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                chat.title
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="relative flex-shrink-0">
-                            <div
-                              className="p-1 text-gray-600 hover:text-gray-600 hover:bg-gray-100 rounded cursor-pointer transition-colors"
-                              onClick={() =>
-                                setActiveDropdown(activeDropdown === chat.sessionId ? null : chat.sessionId)
-                              }
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
-                              </svg>
-                            </div>
-
-                            {activeDropdown === chat.sessionId && (
-                              <div className={`absolute right-0 ${index === thirtyDaysChats.length - 1 ? 'bottom-0 mb-1' : 'mt-1'} w-28 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden`}>
-                                <div
-                                  className="px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
-                                  onClick={() => {
-                                    setActiveDropdown(null);
-                                    setEditingSessionId(chat.sessionId);
-                                    setEditingTitle(chat.title || "");
-                                  }}
-                                >
-                                  <svg className="h-2.5 w-2.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                  Rename
-                                </div>
-                                <div
-                                  className="px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 cursor-pointer transition-colors flex items-center"
-                                  onClick={() => {
-                                    setActiveDropdown(null);
-                                    handleDelete(chat.sessionId);
-                                  }}
-                                >
-                                  <svg className="h-2.5 w-2.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                  Delete
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                
               </div>
             </div>
           </div>
@@ -1272,14 +994,12 @@ const Home: React.FC = (): React.ReactElement => {
             <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center ">
               {messages.length === 0 ? (
                 <>
-                  <h3 className="text-2xl font-semibold mb-4 mt-28 chat-title">
-                    Bagaimana perasaanmu
+                  <h3 className="text-2xl font-semibold mb-4 mt-28 chat-title flex items-center">
+                    <FaceSmileIcon className="h-8 w-8 mr-2 text-yellow-500" />
+                    Hai, aku Teta - Teman Ceritamu
                   </h3>
-                  <div className="flex flex-wrap justify-center gap-4 mb-8 chat-emot">
-                    <button onClick={() => handleEmotionClick("senang")} className="bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😁 Senang</button>
-                    <button onClick={() => handleEmotionClick("sedih")} className="bg-gradient-to-r from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😔 Sedih</button>
-                    <button onClick={() => handleEmotionClick("marah")} className="bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😡 Marah</button>
-                    <button onClick={() => handleEmotionClick("cemas")} className="bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">🥶 Cemas</button>
+                  <div className="text-center text-gray-600 mb-8 max-w-md">
+                    Ini adalah ruang aman untuk berbagi cerita, dan aku siap mendengarkan.
                   </div>
                 </>
               ) : (
@@ -1336,25 +1056,25 @@ const Home: React.FC = (): React.ReactElement => {
             {/* Input area */}
             <div className="p-6 chat-section mt-6">
               <div className="max-w-4xl mx-auto">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 rounded-full shadow-md border border-gray-300 bg-gray-100 overflow-hidden transition chat-input-pesan">
-                    <input
-                      type="text"
-                      placeholder="Tulis pesan disini..."
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      autoComplete="off"
-                      className="w-full py-2 px-5 bg-transparent focus:outline-none text-gray-600 placeholder-gray-400"
-                    />
-                  </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Tulis ceritamu disini..."
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    autoComplete="off"
+                    className="w-full py-2 px-5 pr-12 rounded-full shadow-md border border-gray-300 bg-gray-100 focus:outline-none text-gray-600 placeholder-gray-400 text-sm"
+                  />
                   <button
                     onClick={() => handleSendMessage()}
-                    className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full transition flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-black hover:bg-gray-900 text-white p-1.5 rounded-full transition flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={inputMessage.trim() === ""}
+                    aria-label="Send message"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-up">
+                      <line x1="12" y1="19" x2="12" y2="5" />
+                      <polyline points="5 12 12 5 19 12" />
                     </svg>
                   </button>
                 </div>
