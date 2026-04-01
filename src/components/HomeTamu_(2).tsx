@@ -2,7 +2,6 @@ import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
-import { FaceSmileIcon } from "@heroicons/react/24/outline";
 import { applyTheme } from "../themes/applyTheme";
 import TetaIcon from "./TetaIcon";
 
@@ -14,61 +13,12 @@ interface Message {
   chatId: string | null;
 }
 
-const escapeHtml = (input: string): string =>
-  input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-const formatInline = (input: string): string =>
-  input.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-
-const formatBotTextToHtml = (text: string): string => {
-  let t = text.replace(/\r\n/g, "\n");
-  t = t.replace(/\s+(?=\*\*\d+\.)/g, "\n");
-  t = t.replace(/\s+(?=\*\*[^*]+:\*\*)/g, "\n");
-  t = t.replace(/\s+\*\s+/g, "\n* ");
-
-  const lines = t
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  let html = "";
-  let inList = false;
-
-  for (const line of lines) {
-    const safeLine = formatInline(escapeHtml(line));
-    if (safeLine.startsWith("* ")) {
-      if (!inList) {
-        html += '<ul class="list-disc pl-5 space-y-1">';
-        inList = true;
-      }
-      html += `<li>${safeLine.slice(2)}</li>`;
-      continue;
-    }
-
-    if (inList) {
-      html += "</ul>";
-      inList = false;
-    }
-
-    html += `<p class="mb-2">${safeLine}</p>`;
-  }
-
-  if (inList) html += "</ul>";
-
-  return html;
-};
-
 const HomeTamu: React.FC = (): React.ReactElement => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState<string>("");
   const [currentCategory, setCurrentCategory] = useState<string>("Hari ini");
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -88,10 +38,6 @@ const HomeTamu: React.FC = (): React.ReactElement => {
       lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
-  useEffect(() => {
-      resizeTextarea();
-    }, [inputMessage]);
 
   useEffect(() => {
     const theme = localStorage.getItem("theme") || "netral";
@@ -116,15 +62,11 @@ const HomeTamu: React.FC = (): React.ReactElement => {
     try {
       setIsBotTyping(true);
 
-      const systemPrompt = { role: "system", content: `Kamu adalah chatbot pendamping kesehatan mental...` };
-      const allMessages = [
-        systemPrompt,
-        ...messages.map((m) => ({ role: m.isUser ? "user" : "assistant", content: m.text })),
-        { role: "user", content: messageToSend },
-      ];
-
       const response = await axios.post(import.meta.env?.VITE_CHAT_URL +  "chat/netmind", {
-        messages: allMessages
+        messages: [
+          ...messages.map((m) => ({ role: m.isUser ? "user" : "assistant", content: m.text })),
+          { role: "user", content: messageToSend },
+        ],
       });
 
       setIsBotTyping(false);
@@ -153,19 +95,13 @@ const HomeTamu: React.FC = (): React.ReactElement => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSendMessage();
-      }
-    };
-  
-    const resizeTextarea = () => {
-      const el = textareaRef.current;
-      if (!el) return;
-      el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-    };
+  const handleEmotionClick = async (emotion: string): Promise<void> => {
+    await handleSendMessage(`Saya merasa ${emotion}`);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent): void => {
+    if (e.key === "Enter") handleSendMessage();
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-theme-background">
@@ -279,12 +215,14 @@ const HomeTamu: React.FC = (): React.ReactElement => {
             <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center ">
               {messages.length === 0 ? (
                 <>
-                  <h3 className="text-2xl font-semibold mb-4 mt-28 chat-title flex items-center">
-                    <FaceSmileIcon className="h-8 w-8 mr-2 text-yellow-500" />
-                    Hai, aku Teta - Teman Ceritamu
+                  <h3 className="text-2xl font-semibold mb-4 mt-28 chat-title">
+                    Bagaimana perasaanmu
                   </h3>
-                  <div className="text-center text-gray-600 mb-8 max-w-md">
-                    Ini adalah ruang aman untuk berbagi cerita, dan aku siap mendengarkan
+                  <div className="flex flex-wrap justify-center gap-4 mb-8 chat-emot">
+                    <button onClick={() => handleEmotionClick("senang")} className="bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😁 Senang</button>
+                    <button onClick={() => handleEmotionClick("sedih")} className="bg-gradient-to-r from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😔 Sedih</button>
+                    <button onClick={() => handleEmotionClick("marah")} className="bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">😡 Marah</button>
+                    <button onClick={() => handleEmotionClick("cemas")} className="bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100 text-gray-700 px-4 py-2 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">🥶 Cemas</button>
                   </div>
                 </>
               ) : (
@@ -295,7 +233,7 @@ const HomeTamu: React.FC = (): React.ReactElement => {
                     ref={index === messages.length - 1 ? lastMessageRef : null}
                   >
                     {!message.isUser && (
-                      <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">T</div>
+                      <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">C</div>
                     )}
 
                     <div
@@ -305,28 +243,25 @@ const HomeTamu: React.FC = (): React.ReactElement => {
                           : "bubble-bot px-4 py-3 shadow-sm rounded-3xl rounded-br-none") + " max-w-[75%] break-words"
                       }
                     >
-                      {message.isUser ? (
-                        <div className="text-sm">{message.text}</div>
-                      ) : (
-                        <div
-                          dangerouslySetInnerHTML={{ __html: formatBotTextToHtml(message.text) }}
-                          className="prose max-w-none text-sm prose-p:my-2 prose-li:my-1"
-                        />
-                      )}
+                      <div className="text-sm">{message.text}</div>
+                      <div className="text-xs mt-1 text-right text-black">
+                        {message.timestamp !== null &&
+                          new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </div>
                     </div>
 
                     {message.isUser && (
                       <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm ml-2 mt-1 flex-shrink-0">
                         {name.charAt(0).toUpperCase()}
                       </div>
-                /*  */    )}
+                    )}
                   </div>
                 ))
               )}
 
               {isBotTyping && (
                 <div className="flex justify-start w-full mb-4">
-                  <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">T</div>
+                  <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">C</div>
                   <div className="bubble-bot px-4 py-3 shadow-sm max-w-xs md:max-w-md lg:max-w-lg break-words">
                     <div className="text-sm animate-pulse text-gray-500">TETA sedang mengetik...</div>
                   </div>
@@ -337,30 +272,25 @@ const HomeTamu: React.FC = (): React.ReactElement => {
             {/* Input area */}
             <div className="p-6 chat-section mt-6">
               <div className="max-w-4xl mx-auto">
-                <div className="relative">
-                  <textarea
-                    placeholder="Tulis ceritamu disini..."
-                    value={inputMessage}
-                    onChange={(e: { target: { value: any; }; }) => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    autoComplete="off"
-                    rows={1}
-                    ref={textareaRef}
-                    className="w-full pt-4 pb-14 px-5 pr-16 rounded-3xl shadow-md border border-gray-300 bg-gray-100 focus:outline-none text-gray-600 placeholder-gray-400 text-sm leading-6 resize-none max-h-24 overflow-y-auto"
-                  />
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 rounded-full shadow-md border border-gray-300 bg-gray-100 overflow-hidden transition chat-input-pesan">
+                    <input
+                      type="text"
+                      placeholder="Tulis pesan disini..."
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      autoComplete="off"
+                      className="w-full py-2 px-5 bg-transparent focus:outline-none text-gray-600 placeholder-gray-400"
+                    />
+                  </div>
                   <button
                     onClick={() => handleSendMessage()}
-                    className={`absolute right-3 bottom-3 p-2 rounded-2xl transition flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                      inputMessage.trim()
-                        ? "bg-gray-900 hover:bg-gray-800 text-white"
-                        : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                    }`}
+                    className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full transition flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     disabled={inputMessage.trim() === ""}
-                    aria-label="Send message"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="19" x2="12" y2="7" />
-                      <polyline points="6 13 12 7 18 13" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                     </svg>
                   </button>
                 </div>

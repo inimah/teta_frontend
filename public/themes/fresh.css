@@ -408,6 +408,33 @@ body,
   font-family: "Poppins", "Inter", sans-serif !important;
   /* krem muda */
 }
+.sidebar-highlight.active {
+  background: rgba(26, 123, 62, 0.1);
+}
+.chat-session-item {
+  color: #5f6b57;
+}
+.chat-session-item:hover {
+  background: #eef4ea;
+}
+.chat-session-item.active {
+  background: #e3f0e0;
+  color: #1a7b3e;
+  box-shadow: 0 1px 6px rgba(26, 123, 62, 0.18);
+}
+.chat-session-dot {
+  color: #4b5a42;
+}
+.chat-session-dot.active {
+  color: #1a7b3e;
+}
+.chat-session-input {
+  border-color: #97a97c;
+}
+.chat-session-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(26, 123, 62, 0.2);
+}
 .chat-icon {
   background: #f5fbf0 !important;
 }

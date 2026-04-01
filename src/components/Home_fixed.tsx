@@ -29,15 +29,12 @@ interface Message {
 // }
 
 interface ChatSession {
-  _id?: string;
   chatId: string | number | null;
   title: string;
   enabled?: boolean;
   messages: Message[];
   created: Date | null;
   lastUpdated: Date | null;
-  createdAt?: string | Date | null;
-  updatedAt?: string | Date | null;
   sessionId: string;
 }
 
@@ -58,81 +55,6 @@ const sortSessions = <
   return [...arr].sort((a, b) => stamp(b) - stamp(a));
 };
 
-const escapeHtml = (input: string): string =>
-  input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-const formatInline = (input: string): string =>
-  input.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-
-const formatBotTextToHtml = (text: string): string => {
-  let t = text.replace(/\r\n/g, "\n");
-  t = t.replace(/\s+(?=\*\*\d+\.)/g, "\n");
-  t = t.replace(/\s+(?=\*\*[^*]+:\*\*)/g, "\n");
-  t = t.replace(/\s+\*\s+/g, "\n* ");
-
-  const lines = t
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  let html = "";
-  let inList = false;
-
-  for (const line of lines) {
-    const safeLine = formatInline(escapeHtml(line));
-    if (safeLine.startsWith("* ")) {
-      if (!inList) {
-        html += '<ul class="list-disc pl-5 space-y-1">';
-        inList = true;
-      }
-      html += `<li>${safeLine.slice(2)}</li>`;
-      continue;
-    }
-
-    if (inList) {
-      html += "</ul>";
-      inList = false;
-    }
-
-    html += `<p class="mb-2">${safeLine}</p>`;
-  }
-
-  if (inList) html += "</ul>";
-
-  return html;
-};
-
-const formatDateStamp = (date: Date | string | null | undefined): string => {
-  const d = date ? new Date(date) : new Date();
-  const yyyy = d.getFullYear().toString();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}${mm}${dd}`;
-};
-
-const getOidValue = (value: unknown): string => {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "object") {
-    const oid = (value as { $oid?: unknown }).$oid;
-    if (typeof oid === "string") return oid;
-  }
-  return "";
-};
-
-const getCounter6FromObjectId = (value: unknown): string | null => {
-  const oid = getOidValue(value);
-  if (!/^[a-fA-F0-9]{24}$/.test(oid)) return null;
-  const counterHex = oid.slice(-6);
-  const counterDec = parseInt(counterHex, 16);
-  if (Number.isNaN(counterDec)) return null;
-  return String(counterDec % 1000000).padStart(6, "0");
-};
-
 const Home: React.FC = (): React.ReactElement => {
   const navigate = useNavigate();
   const { logOut } = UserAuth();
@@ -147,7 +69,6 @@ const Home: React.FC = (): React.ReactElement => {
   const [theme] = useState("netral");
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<{
@@ -209,43 +130,6 @@ const Home: React.FC = (): React.ReactElement => {
     // Save file
     XLSX.writeFile(wb, `${session.title || "chat-session"}.xlsx`);
   };
-
-  const handleExportToJSON = (sessionId: string) => {
-    const session = chatHistory.find((chat) => chat.sessionId === sessionId);
-    if (!session) return;
-
-    const datelog = formatDateStamp(session.createdAt ?? session.created ?? new Date());
-    const idRaw = getCounter6FromObjectId(session.sessionId) ?? "";
-    const dialogId = `${datelog}_${idRaw}`;
-
-    const payload = {
-      _id: { $oid: getOidValue(session._id) || getOidValue(session.sessionId) },
-      session_id: session.sessionId,
-      system_id: "LLM-01",
-      emotion_type: "",
-      topic: "",
-      situation_summary: "",
-      dialogue: session.messages.map((msg) => ({
-        speaker: msg.isUser ? "usr" : "sys",
-        text: msg.text ?? "",
-      })),
-      dialog_id: dialogId,
-      ID_raw: idRaw,
-      datelog,
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${session.title || "chat-session"}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
   const firstWord = (s?: string) => (s || "").trim().split(/\s+/)[0] || "";
 
   const getDisplayName = (user: { sapaan?: string; name?: string } | null) => {
@@ -276,10 +160,6 @@ const Home: React.FC = (): React.ReactElement => {
       lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
-  useEffect(() => {
-    resizeTextarea();
-  }, [inputMessage]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -599,13 +479,9 @@ const Home: React.FC = (): React.ReactElement => {
       setIsBotTyping(false);
 
       const botText =
-        typeof response.data?.answer === "string" && response.data.answer.trim() !== ""
+        response.data.answer && response.data.answer.trim() !== ""
           ? response.data.answer.trim()
-          : typeof response.data?.error === "string" && response.data.error.trim() !== ""
-            ? response.data.error.trim()
-            : typeof response.data?.message === "string" && response.data.message.trim() !== ""
-              ? response.data.message.trim()
-              : "Maaf, aku tidak mengerti pertanyaanmu.";
+          : "Maaf, aku tidak mengerti pertanyaanmu.";
 
       const botMessage: Message = {
         id: Date.now().toString(),
@@ -650,18 +526,8 @@ const Home: React.FC = (): React.ReactElement => {
   };
 
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const resizeTextarea = () => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+  const handleKeyPress = (e: React.KeyboardEvent): void => {
+    if (e.key === "Enter") handleSendMessage();
   };
 
   const handleCategoryClick = (category: string): void => {
@@ -778,7 +644,7 @@ const Home: React.FC = (): React.ReactElement => {
               <div className="grid grid-cols-1 gap-0.25 mt-2">
                 {/* Eksplorasi */}
                 <div
-                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] sidebar-highlight ${currentCategory === "Eksplorasi" ? "active shadow-md" : " hover:shadow-sm"
+                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Eksplorasi" ? " shadow-md" : " hover:shadow-sm"
                     }`}
                   onClick={() => navigate("/eksplorasi")}
                 >
@@ -792,7 +658,7 @@ const Home: React.FC = (): React.ReactElement => {
 
                 {/* Cek Kondisi Hatimu */}
                 <div
-                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] sidebar-highlight ${currentCategory === "Cek Kondisi Hatimu" ? "active shadow-md" : " hover:shadow-sm"
+                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Cek Kondisi Hatimu" ? " shadow-md" : " hover:shadow-sm"
                     }`}
                   onClick={() => navigate("/pertanyaan")}
                 >
@@ -814,7 +680,7 @@ const Home: React.FC = (): React.ReactElement => {
 
                 {/* Chat Baru */}
                 <div
-                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] sidebar-highlight ${currentCategory === "Chat baru" ? "active shadow-md" : " hover:shadow-sm"
+                  className={`group cursor-pointer py-1 px-4 rounded-2xl transition-all duration-300 flex items-center hover:scale-[1.02] ${currentCategory === "Chat baru" ? " shadow-md" : " hover:shadow-sm"
                     }`}
                   onClick={() => handleCategoryClick("Chat baru")}
                 >
@@ -838,29 +704,19 @@ const Home: React.FC = (): React.ReactElement => {
 
                 {currentCategory === "Hari ini" && (
                   <div className="ml-4 mt-0.5 ">
-                    {chatHistory.map((chat, index) => {
-                      const isActive = currentSessionId === chat.sessionId;
-                      return (
-                        <div
-                          key={`${chat.sessionId}-${index}`}
-                          className={`py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between group chat-session-item ${
-                            isActive ? "active" : ""
-                          }`}
-                        >
+                    {chatHistory.map((chat, index) => (
+                      <div
+                        key={`${chat.sessionId}-${index}`}
+                        className="py-0 px-2 rounded-md transition-all duration-200 flex items-center justify-between hover:bg-gray-50 t text-gray-600 group"
+                      >
                           <div className="flex items-center cursor-pointer overflow-hidden flex-1" onClick={() => loadChat(chat.sessionId)}>
                             <div className="h-4 w-4 mr-2 bg-transparent rounded flex items-center justify-center flex-shrink-0">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className={`h-4 w-4 chat-session-dot ${isActive ? "active" : ""}`}
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                                stroke="none"
-                              >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-800" fill="currentColor" viewBox="0 0 24 24" stroke="none">
                                 <circle cx="12" cy="12" r="6" />
                               </svg>
                             </div>
                           <div
-                            className={`truncate text-sm flex-1 ${isActive ? "font-semibold" : ""}`}
+                            className="truncate text-sm flex-1"
                             onDoubleClick={() => {
                               setEditingSessionId(chat.sessionId);
                               setEditingTitle(chat.title || "");
@@ -875,7 +731,7 @@ const Home: React.FC = (): React.ReactElement => {
                                 type="text"
                                 value={editingTitle}
                                 autoFocus
-                                className="w-full px-1 py-0.5 rounded border text-xs chat-session-input"
+                                className="w-full px-1 py-0.5 rounded border border-blue-300 text-xs"
                                 onChange={(e) => setEditingTitle(e.target.value)}
                                 onBlur={async () => {
                                   await handleRenameInline(chat.sessionId, editingTitle);
@@ -949,25 +805,11 @@ const Home: React.FC = (): React.ReactElement => {
                                 </svg>
                                 Export XLS
                               </div>
-                              <div
-                                className="px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50 cursor-pointer transition-colors flex items-center"
-                                onClick={() => {
-                                  setActiveDropdown(null);
-                                  handleExportToJSON(chat.sessionId);
-                                }}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2z" />
-                                  <path d="M7 8h10M7 12h10M7 16h6" />
-                                </svg>
-                                Export JSON
-                              </div>
                             </div>
                           )}
                         </div>
                       </div>
-                      );
-                    })}
+                    ))}
                   </div>
                 )}
                 
@@ -1168,7 +1010,7 @@ const Home: React.FC = (): React.ReactElement => {
                     ref={index === messages.length - 1 ? lastMessageRef : null}
                   >
                     {!message.isUser && (
-                      <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">T</div>
+                      <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">C</div>
                     )}
 
                     <div
@@ -1179,26 +1021,17 @@ const Home: React.FC = (): React.ReactElement => {
                       }
                     >
                       <div className="text-sm">
-                        {!message.isUser ? (
+                        {!message.isUser &&
                           /<\/?(table|ul|ol|li|tr|td|th|thead|tbody|div|h3|h4|strong)>/i.test(message.text) ? (
-                            <div
-                              dangerouslySetInnerHTML={{ __html: message.text }}
-                              className="prose max-w-none prose-p:my-2 prose-li:my-1"
-                            />
-                          ) : (
-                            <div
-                              dangerouslySetInnerHTML={{ __html: formatBotTextToHtml(message.text) }}
-                              className="prose max-w-none prose-p:my-2 prose-li:my-1"
-                            />
-                          )
+                          <div dangerouslySetInnerHTML={{ __html: message.text }} className="prose max-w-none" />
                         ) : (
                           message.text
                         )}
                       </div>
-                      {/* <div className="text-xs mt-1 text-right text-black">
+                      <div className="text-xs mt-1 text-right text-black">
                         {message.timestamp !== null &&
                           new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </div> */}
+                      </div>
                     </div>
 
                     {message.isUser && (
@@ -1212,7 +1045,7 @@ const Home: React.FC = (): React.ReactElement => {
 
               {isBotTyping && (
                 <div className="flex justify-start w-full mb-4">
-                  <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">T</div>
+                  <div className="h-8 w-8 rounded-full bot-chat flex items-center justify-center text-white text-sm mr-2 mt-1 flex-shrink-0">C</div>
                   <div className="bubble-bot px-4 py-3 shadow-sm max-w-xs md:max-w-md lg:max-w-lg break-words">
                     <div className="text-sm animate-pulse text-gray-500">TETA sedang mengetik...</div>
                   </div>
@@ -1224,29 +1057,24 @@ const Home: React.FC = (): React.ReactElement => {
             <div className="p-6 chat-section mt-6">
               <div className="max-w-4xl mx-auto">
                 <div className="relative">
-                  <textarea
+                  <input
+                    type="text"
                     placeholder="Tulis ceritamu disini..."
                     value={inputMessage}
-                    onChange={(e: { target: { value: any; }; }) => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     autoComplete="off"
-                    rows={1}
-                    ref={textareaRef}
-                    className="w-full pt-4 pb-14 px-5 pr-16 rounded-3xl shadow-md border border-gray-300 bg-gray-100 focus:outline-none text-gray-600 placeholder-gray-400 text-sm leading-6 resize-none max-h-24 overflow-y-auto"
+                    className="w-full py-2 px-5 pr-12 rounded-full shadow-md border border-gray-300 bg-gray-100 focus:outline-none text-gray-600 placeholder-gray-400 text-sm"
                   />
                   <button
                     onClick={() => handleSendMessage()}
-                    className={`absolute right-3 bottom-3 p-2 rounded-2xl transition flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                      inputMessage.trim()
-                        ? "bg-gray-900 hover:bg-gray-800 text-white"
-                        : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                    }`}
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-black hover:bg-gray-900 text-white p-1.5 rounded-full transition flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={inputMessage.trim() === ""}
                     aria-label="Send message"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="19" x2="12" y2="7" />
-                      <polyline points="6 13 12 7 18 13" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-up">
+                      <line x1="12" y1="19" x2="12" y2="5" />
+                      <polyline points="5 12 12 5 19 12" />
                     </svg>
                   </button>
                 </div>

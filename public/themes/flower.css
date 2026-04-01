@@ -31,6 +31,33 @@ body,
   font-family: "Poppins", "Inter", sans-serif !important;
   /* krem muda */
 }
+.sidebar-highlight.active {
+  background: rgba(184, 138, 58, 0.1);
+}
+.chat-session-item {
+  color: #7a6a5a;
+}
+.chat-session-item:hover {
+  background: #f7efe3;
+}
+.chat-session-item.active {
+  background: #f3e4cf;
+  color: #b88a3a;
+  box-shadow: 0 1px 6px rgba(184, 138, 58, 0.2);
+}
+.chat-session-dot {
+  color: #6b5c4f;
+}
+.chat-session-dot.active {
+  color: #b88a3a;
+}
+.chat-session-input {
+  border-color: #e6c793;
+}
+.chat-session-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(184, 138, 58, 0.2);
+}
 
 /* 4. Card & Input */
 .login-card {
@@ -155,6 +182,18 @@ body,
 }
 ::-webkit-scrollbar-track {
   background: #fff8f0;
+}
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 .max-h-32::-webkit-scrollbar {
   width: 0 !important;

@@ -29,15 +29,12 @@ interface Message {
 // }
 
 interface ChatSession {
-  _id?: string;
   chatId: string | number | null;
   title: string;
   enabled?: boolean;
   messages: Message[];
   created: Date | null;
   lastUpdated: Date | null;
-  createdAt?: string | Date | null;
-  updatedAt?: string | Date | null;
   sessionId: string;
 }
 
@@ -104,33 +101,6 @@ const formatBotTextToHtml = (text: string): string => {
   if (inList) html += "</ul>";
 
   return html;
-};
-
-const formatDateStamp = (date: Date | string | null | undefined): string => {
-  const d = date ? new Date(date) : new Date();
-  const yyyy = d.getFullYear().toString();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}${mm}${dd}`;
-};
-
-const getOidValue = (value: unknown): string => {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "object") {
-    const oid = (value as { $oid?: unknown }).$oid;
-    if (typeof oid === "string") return oid;
-  }
-  return "";
-};
-
-const getCounter6FromObjectId = (value: unknown): string | null => {
-  const oid = getOidValue(value);
-  if (!/^[a-fA-F0-9]{24}$/.test(oid)) return null;
-  const counterHex = oid.slice(-6);
-  const counterDec = parseInt(counterHex, 16);
-  if (Number.isNaN(counterDec)) return null;
-  return String(counterDec % 1000000).padStart(6, "0");
 };
 
 const Home: React.FC = (): React.ReactElement => {
@@ -208,43 +178,6 @@ const Home: React.FC = (): React.ReactElement => {
 
     // Save file
     XLSX.writeFile(wb, `${session.title || "chat-session"}.xlsx`);
-  };
-
-  const handleExportToJSON = (sessionId: string) => {
-    const session = chatHistory.find((chat) => chat.sessionId === sessionId);
-    if (!session) return;
-
-    const datelog = formatDateStamp(session.createdAt ?? session.created ?? new Date());
-    const idRaw = getCounter6FromObjectId(session.sessionId) ?? "";
-    const dialogId = `${datelog}_${idRaw}`;
-
-    const payload = {
-      _id: { $oid: getOidValue(session._id) || getOidValue(session.sessionId) },
-      session_id: session.sessionId,
-      system_id: "LLM-01",
-      emotion_type: "",
-      topic: "",
-      situation_summary: "",
-      dialogue: session.messages.map((msg) => ({
-        speaker: msg.isUser ? "usr" : "sys",
-        text: msg.text ?? "",
-      })),
-      dialog_id: dialogId,
-      ID_raw: idRaw,
-      datelog,
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${session.title || "chat-session"}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
   };
   const firstWord = (s?: string) => (s || "").trim().split(/\s+/)[0] || "";
 
@@ -599,13 +532,9 @@ const Home: React.FC = (): React.ReactElement => {
       setIsBotTyping(false);
 
       const botText =
-        typeof response.data?.answer === "string" && response.data.answer.trim() !== ""
+        response.data.answer && response.data.answer.trim() !== ""
           ? response.data.answer.trim()
-          : typeof response.data?.error === "string" && response.data.error.trim() !== ""
-            ? response.data.error.trim()
-            : typeof response.data?.message === "string" && response.data.message.trim() !== ""
-              ? response.data.message.trim()
-              : "Maaf, aku tidak mengerti pertanyaanmu.";
+          : "Maaf, aku tidak mengerti pertanyaanmu.";
 
       const botMessage: Message = {
         id: Date.now().toString(),
@@ -948,19 +877,6 @@ const Home: React.FC = (): React.ReactElement => {
                                   <path d="M7 12h10M7 16h10M7 8h10" />
                                 </svg>
                                 Export XLS
-                              </div>
-                              <div
-                                className="px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50 cursor-pointer transition-colors flex items-center"
-                                onClick={() => {
-                                  setActiveDropdown(null);
-                                  handleExportToJSON(chat.sessionId);
-                                }}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2z" />
-                                  <path d="M7 8h10M7 12h10M7 16h6" />
-                                </svg>
-                                Export JSON
                               </div>
                             </div>
                           )}
