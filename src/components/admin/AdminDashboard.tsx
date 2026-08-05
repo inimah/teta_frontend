@@ -3,16 +3,27 @@ import axios from "axios";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { toast } from "react-toastify";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { id as idLocale } from "date-fns/locale";
+import { format } from "date-fns";
+
+import { FiHelpCircle } from "react-icons/fi";
+import AdminQuestions from "./AdminQuestions";
+import AdminRelaxTracks from "./AdminRelaxTracks";
+import AdminPretestRules from "./AdminPretestRules";
+import AdminMonitoringChat from "./AdminMonitoringChat";
+
 
 import {
   FiHome,
   FiUsers,
-  FiBarChart2,
   FiFileText,
   FiSettings,
   FiSearch,
   FiUser,
   FiMessageSquare,
+  FiMonitor,
 } from "react-icons/fi";
 import { Bar, Pie } from "react-chartjs-2";
 import {
@@ -32,24 +43,36 @@ Chart.register(
   Tooltip,
   Legend
 );
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+// [PATCH] import useNavigate
+import { useNavigate } from "react-router-dom";
 
 const menus = [
   { key: "dashboard", label: "Dashboard", icon: <FiHome /> },
   { key: "pengguna", label: "Pengguna", icon: <FiUsers /> },
-  { key: "statistik", label: "Statistik", icon: <FiBarChart2 /> },
   { key: "kategori", label: "Kategori", icon: <FiFileText /> },
   { key: "konten", label: "Konten", icon: <FiFileText /> },
   { key: "quotes", label: "Quotes", icon: <FiMessageSquare /> },
+  { key: "questions", label: "Pretest", icon: <FiHelpCircle /> },
+  { key: "pretest-rules", label: "Pretest Rules", icon: <FiFileText /> },
+  // [PATCH] menu baru untuk halaman admin relax-tracks
+  { key: "relax-tracks", label: "Audio", icon: <FiFileText /> },
+  { key: "monitoring-chat", label: "Monitoring Chat", icon: <FiMonitor /> },
   { key: "settings", label: "Settings", icon: <FiSettings /> },
   { key: "search", label: "Search", icon: <FiSearch /> },
   { key: "profile", label: "Profile", icon: <FiUser /> },
 ];
 
 const AdminDashboard: React.FC = () => {
+  // [PATCH] inisialisasi navigate
+  const nav = useNavigate();
+
   const [, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [guestCount, setGuestCount] = useState<number>(0);
+  const [chatSessions, setChatSessions] = useState<any[]>([]);
+  const [activeHourFrom, setActiveHourFrom] = useState<string>("");
+  const [activeHourTo, setActiveHourTo] = useState<string>("");
+  const [includeTestSessions, setIncludeTestSessions] = useState<boolean>(false);
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -61,37 +84,14 @@ const AdminDashboard: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [editingContent, setEditingContent] = useState<any | null>(null);
   const [editingQuote, setEditingQuote] = useState<any | null>(null);
-  const [dailyVisitors, setDailyVisitors] = useState<{
-    labels: string[];
-    data: number[];
-  }>({ labels: [], data: [] });
-  const [visitorStart, setVisitorStart] = useState<Date | null>(null);
-  const [visitorEnd, setVisitorEnd] = useState<Date | null>(null);
-
-  const fetchDailyVisitors = async (start?: Date, end?: Date) => {
-    const token = localStorage.getItem("authToken");
-    const config = { headers: { Authorization: `Bearer ${token}` } };
-    let url = "/api/admin/daily-visitors";
-    if (start && end) {
-      url += `?start=${start.toISOString().slice(0, 10)}&end=${end
-        .toISOString()
-        .slice(0, 10)}`;
-    }
-    const res = await axios.get(url, config);
-    setDailyVisitors(res.data);
-  };
-
-  useEffect(() => {
-    if (activeMenu === "statistik") {
-      // Default: 7 hari terakhir
-      const today = new Date();
-      const weekAgo = new Date();
-      weekAgo.setDate(today.getDate() - 6);
-      setVisitorStart(weekAgo);
-      setVisitorEnd(today);
-      fetchDailyVisitors(weekAgo, today);
-    }
-  }, [activeMenu]);
+  const [monthChartFrom, setMonthChartFrom] = useState<string>(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 11);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [monthChartTo, setMonthChartTo] = useState<string>(
+    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,10 +100,10 @@ const AdminDashboard: React.FC = () => {
         const config = token
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
-        const statsRes = await axios.get("/api/admin/stats", config);
-        const usersRes = await axios.get("/api/admin/users", config);
+        const statsRes = await axios.get(import.meta.env?.VITE_API_URL + "api/admin/stats", config);
+        const usersRes = await axios.get(import.meta.env?.VITE_API_URL + "api/admin/users", config);
         setStats(statsRes.data);
-        setUsers(usersRes.data);
+        setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
       } catch (err) {
         console.error("Gagal fetch data admin:", err);
       } finally {
@@ -118,12 +118,29 @@ const AdminDashboard: React.FC = () => {
   //   }
   // }, [editingContent]);
   useEffect(() => {
+    const fetchGuestCount = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await axios.get(import.meta.env?.VITE_API_URL + "api/admin/chats", config);
+        const chats: any[] = Array.isArray(res.data) ? res.data : [];
+        const guestSessions = chats.filter((s: any) => !s.userId);
+        setGuestCount(guestSessions.length);
+        setChatSessions(chats);
+      } catch (err) {
+        console.error("Gagal fetch data tamu:", err);
+      }
+    };
+    fetchGuestCount();
+  }, []);
+
+  useEffect(() => {
     const fetchCategories = async () => {
       const token = localStorage.getItem("authToken");
       const config = { headers: { Authorization: `Bearer ${token}` } };
       try {
-        const cats = await axios.get("/api/admin/categories", config);
-        setCategories(cats.data);
+        const cats = await axios.get(import.meta.env?.VITE_API_URL + "api/admin/categories", config);
+        setCategories(Array.isArray(cats.data) ? cats.data : []);
       } catch (err) {
         console.error("Gagal fetch kategori:", err);
       }
@@ -138,7 +155,7 @@ const AdminDashboard: React.FC = () => {
       try {
         const res = await axios.get("/api/admin/contents", config);
 
-        setContents(res.data);
+        setContents(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error("Gagal fetch konten:", err);
       }
@@ -158,36 +175,33 @@ const AdminDashboard: React.FC = () => {
   // };
 
   const handleLogout = async () => {
-  try {
-    // (Opsional) panggil endpoint logout di backend jika ada revoke/blacklist
-    // await axios.post("/auth/logout", {}, { headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` } });
+    try {
+      // (Opsional) panggil endpoint logout di backend jika ada revoke/blacklist
+      // await axios.post("/auth/logout", {}, { headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` } });
 
-    // Bersihkan local/session storage
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authUser"); // kalau lib/auth menyimpan user di key ini
-    sessionStorage.removeItem("authToken");
-    sessionStorage.removeItem("authUser");
+      // Bersihkan local/session storage
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser"); // kalau lib/auth menyimpan user di key ini
+      sessionStorage.removeItem("authToken");
+      sessionStorage.removeItem("authUser");
 
-    // Bersihkan default header Authorization axios (kalau pernah diset global)
-    if (axios.defaults?.headers?.common) {
-      delete axios.defaults.headers.common["Authorization"];
+      // Bersihkan default header Authorization axios (kalau pernah diset global)
+      if (axios.defaults?.headers?.common) {
+        delete axios.defaults.headers.common["Authorization"];
+      }
+
+      // Matikan auto-select Google One Tap biar tidak auto-login lagi sebagai user
+      if (window.google?.accounts?.id?.disableAutoSelect) {
+        window.google.accounts.id.disableAutoSelect();
+      }
+
+      // [PATCH] arahkan ke halaman login admin via react-router
+      nav("/admin/login", { replace: true });
+    } catch (e) {
+      // fallback
+      nav("/admin/login", { replace: true });
     }
-
-    // Matikan auto-select Google One Tap biar tidak auto-login lagi sebagai user
-    if (window.google?.accounts?.id?.disableAutoSelect) {
-      window.google.accounts.id.disableAutoSelect();
-    }
-
-    // Arahkan ke halaman login admin, bukan root
-    window.location.replace("/admin/login");
-    // atau kalau mau pakai react-router:
-    // nav("/admin/login", { replace: true });
-  } catch (e) {
-    // fallback kalau ada error saat logout: tetap paksa ke admin login
-    window.location.replace("/admin/login");
-  }
-};
-
+  };
 
   const toggleFlag = async (id: string, newFlag: boolean) => {
     const token = localStorage.getItem("authToken");
@@ -195,33 +209,33 @@ const AdminDashboard: React.FC = () => {
     await axios.patch(`/api/admin/contents/${id}`, { flag: newFlag }, config);
     // refresh data konten
     const conts = await axios.get("/api/admin/contents", config);
-    setContents(conts.data);
+    setContents(Array.isArray(conts.data) ? conts.data : []);
   };
   // ...existing code...
-  const filteredUsers = Array.isArray(users)
-    ? users.filter((u) => {
-        const matchSearch =
-          u.name?.toLowerCase().includes(search.toLowerCase()) ||
-          u.email?.toLowerCase().includes(search.toLowerCase()) ||
-          u._id?.toLowerCase().includes(search.toLowerCase());
+  const usersOnly = users.filter((u: any) => u.role !== "admin");
 
-        const matchGender = filterGender
-          ? (u.sex || u.gender) === filterGender
-          : true;
+  const filteredUsers = usersOnly.filter((u: any) => {
+      const matchSearch =
+        u.name?.toLowerCase().includes(search.toLowerCase()) ||
+        u.email?.toLowerCase().includes(search.toLowerCase()) ||
+        u._id?.toLowerCase().includes(search.toLowerCase());
 
-        // Ubah filter usia sesuai opsi baru
-        let userAge = u.age ?? (u.birthdate ? getAge(u.birthdate) : null);
-        let matchAge = true;
-        if (filterAge === "12-15") matchAge = userAge >= 12 && userAge <= 15;
-        else if (filterAge === "16-20")
-          matchAge = userAge >= 16 && userAge <= 20;
-        else if (filterAge === "21-25")
-          matchAge = userAge >= 21 && userAge <= 25;
-        else if (filterAge === ">25") matchAge = userAge > 25;
+      const matchGender = filterGender
+        ? (u.sex || u.gender) === filterGender
+        : true;
 
-        return matchSearch && matchGender && matchAge;
-      })
-    : [];
+      // Ubah filter usia sesuai opsi baru
+      let userAge = u.age ?? (u.birthdate ? getAge(u.birthdate) : null);
+      let matchAge = true;
+      if (filterAge === "12-15") matchAge = userAge >= 12 && userAge <= 15;
+      else if (filterAge === "16-20")
+        matchAge = userAge >= 16 && userAge <= 20;
+      else if (filterAge === "21-25")
+        matchAge = userAge >= 21 && userAge <= 25;
+      else if (filterAge === ">25") matchAge = userAge > 25;
+
+      return matchSearch && matchGender && matchAge;
+    });
   // ...existing code...
 
   const handleDelete = (id: string) => {
@@ -234,7 +248,7 @@ const AdminDashboard: React.FC = () => {
 
   // const fetchUsers = async () => {
   //   try {
-  //     const res = await axios.get(import.meta.env?.VITE_API_URL + "/api/admin/users", {
+  //     const res = await axios.get("http://localhost:5000/api/admin/users", {
   //       headers: {
   //         Authorization: `Bearer ${localStorage.getItem("authToken")}`,
   //       },
@@ -273,6 +287,7 @@ const AdminDashboard: React.FC = () => {
     labels: string[];
     data: number[];
   }) {
+    if (!Array.isArray(dailyVisitors?.labels)) return { labels: [], data: [] };
     const monthly: { [month: string]: number } = {};
     dailyVisitors.labels.forEach((date, i) => {
       // Ambil "YYYY-MM" dari tanggal
@@ -289,22 +304,22 @@ const AdminDashboard: React.FC = () => {
     data: number[];
   }>({ labels: [], data: [] });
 
+  const fetchMonthly = async (from?: string, to?: string) => {
+    const token = localStorage.getItem("authToken");
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const f = from ?? monthChartFrom;
+    const t = to ?? monthChartTo;
+    const url = import.meta.env?.VITE_API_URL + `api/admin/chat-monthly?start=${f}&end=${t}`;
+    const res = await axios.get(url, config);
+    setMonthlyVisitors(getMonthlyVisitors(res.data));
+  };
+
   useEffect(() => {
-    // Ambil data harian (seperti statistik)
-    const fetchMonthly = async () => {
-      const token = localStorage.getItem("authToken");
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      // Ambil data 1 tahun terakhir (atau sesuai kebutuhan)
-      const now = new Date();
-      const yearAgo = new Date();
-      yearAgo.setFullYear(now.getFullYear() - 1);
-      const url = `/api/admin/daily-visitors?start=${yearAgo
-        .toISOString()
-        .slice(0, 10)}&end=${now.toISOString().slice(0, 10)}`;
-      const res = await axios.get(url, config);
-      setMonthlyVisitors(getMonthlyVisitors(res.data));
-    };
-    fetchMonthly();
+    const d = new Date();
+    d.setMonth(d.getMonth() - 11);
+    const initFrom = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const initTo = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    fetchMonthly(initFrom, initTo);
   }, []);
 
   function getAge(birthdate: string): number {
@@ -354,6 +369,38 @@ const AdminDashboard: React.FC = () => {
       perempuan,
     };
   }
+  function isTestSession(s: any) {
+    return (
+      s.isTest === true ||
+      s.userId?.role === "admin" ||
+      (s.sessionId && s.sessionId.startsWith("test-"))
+    );
+  }
+  function getActiveHourDistribution(sessions: any[], dateFrom: string, dateTo: string) {
+    const hours = new Array(24).fill(0);
+    const from = dateFrom ? new Date(dateFrom + "T00:00:00") : null;
+    const to = dateTo ? new Date(dateTo + "T23:59:59") : null;
+    sessions.forEach((s) => {
+      (s.messages ?? []).forEach((msg: any) => {
+        if (!msg.timestamp) return;
+        const date = new Date(msg.timestamp);
+        if (from && date < from) return;
+        if (to && date > to) return;
+        hours[date.getHours()]++;
+      });
+    });
+    return hours;
+  }
+  function getSessionLengthDistribution(sessions: any[]) {
+    const buckets = new Array(10).fill(0);
+    sessions.forEach((s) => {
+      const len = s.messages?.length ?? 0;
+      if (len <= 0) return;
+      const idx = len <= 9 ? len - 1 : 9;
+      buckets[idx]++;
+    });
+    return buckets;
+  }
   // State untuk Quotes
   const [quotes, setQuotes] = useState<any[]>([]);
   const [quoteForm, setQuoteForm] = useState({
@@ -373,7 +420,7 @@ const AdminDashboard: React.FC = () => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         try {
           const res = await axios.get("/api/admin/quotes", config);
-          setQuotes(res.data);
+          setQuotes(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
           setQuotes([]);
         }
@@ -416,7 +463,7 @@ const AdminDashboard: React.FC = () => {
     });
     // Refresh quotes
     const res = await axios.get("/api/admin/quotes", config);
-    setQuotes(res.data);
+    setQuotes(Array.isArray(res.data) ? res.data : []);
   };
 
   // Handler hapus quote
@@ -433,10 +480,31 @@ const AdminDashboard: React.FC = () => {
     await axios.patch(`/api/admin/quotes/${id}`, { flag: newFlag }, config);
     // Refresh quotes
     const res = await axios.get("/api/admin/quotes", config);
-    setQuotes(res.data);
+    setQuotes(Array.isArray(res.data) ? res.data : []);
   };
   if (loading) return <div className="p-10">Loading...</div>;
-  const usersOnly = users?.filter((u) => u.role !== "admin") || [];
+
+  // [PATCH] handler klik menu (tambahkan navigasi untuk relax-tracks)
+  const handleMenuClick = (key: string) => {
+    // if (key === "relax-tracks") {
+    //   nav("/admin/relax-tracks");
+    //   return;
+    // }
+    setActiveMenu(key);
+  };
+
+  const ageGenderData = getUserByAgeGender(usersOnly);
+  const ageGroupData = getUserAgeGroups(usersOnly);
+  const usersWithAgeCount = ageGroupData.reduce((a: number, b: number) => a + b, 0);
+  const usersWithBothCount =
+    ageGenderData.laki.reduce((a: number, b: number) => a + b, 0) +
+    ageGenderData.perempuan.reduce((a: number, b: number) => a + b, 0);
+  const visibleSessions = includeTestSessions
+    ? chatSessions
+    : chatSessions.filter((s) => !isTestSession(s));
+  const activeHourData = getActiveHourDistribution(visibleSessions, activeHourFrom, activeHourTo);
+  const activeHourMax = Math.max(...activeHourData);
+  const sessionLengthData = getSessionLengthDistribution(visibleSessions);
 
   return (
     <div
@@ -492,31 +560,34 @@ const AdminDashboard: React.FC = () => {
                 const iconMap: { [key: string]: string } = {
                   dashboard: "🏠",
                   pengguna: "👥",
-                  statistik: "📊",
                   kategori: "📁",
                   konten: "📝",
                   quotes: "💬",
+                  questions: "❓",
+                  "pretest-rules": "📐",
+                  // [PATCH] icon untuk relax-tracks
+                  "relax-tracks": "🎵",
+                  "monitoring-chat": "🗨️",
                   settings: "⚙️",
                   laporan: "📋",
                   analytics: "📈",
                   profile: "👤",
                   search: "🔍",
                 };
-                return iconMap[menuKey.toLowerCase()] || menu.icon || "📋";
+                return iconMap[menuKey.toLowerCase()] || (menu.icon as any) || "📋";
               };
 
               return (
                 <div key={menu.key}>
                   <li
                     className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 ease-out transform hover:scale-[1.02]
-                ${
-                  activeMenu === menu.key
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-lg shadow-blue-500/25 border border-blue-400/50"
-                    : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100/50 text-slate-700 hover:text-blue-700 hover:shadow-md hover:shadow-blue-100/50 border border-transparent hover:border-blue-200/50"
-                }
+                ${activeMenu === menu.key
+                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-lg shadow-blue-500/25 border border-blue-400/50"
+                        : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100/50 text-slate-700 hover:text-blue-700 hover:shadow-md hover:shadow-blue-100/50 border border-transparent hover:border-blue-200/50"
+                      }
                 ${"justify-center md:justify-start"}
               `}
-                    onClick={() => setActiveMenu(menu.key)}
+                    onClick={() => handleMenuClick(menu.key)} // [PATCH]
                     title={menu.label}
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
@@ -527,11 +598,10 @@ const AdminDashboard: React.FC = () => {
 
                     {/* Icon container */}
                     <div
-                      className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-300 ${
-                        activeMenu === menu.key
-                          ? "bg-white/20 text-white"
-                          : "group-hover:bg-blue-100 group-hover:text-blue-600"
-                      }`}
+                      className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-300 ${activeMenu === menu.key
+                        ? "bg-white/20 text-white"
+                        : "group-hover:bg-blue-100 group-hover:text-blue-600"
+                        }`}
                     >
                       <span className="text-lg">{getMenuIcon(menu.key)}</span>
                     </div>
@@ -543,11 +613,10 @@ const AdminDashboard: React.FC = () => {
 
                     {/* Hover effect arrow */}
                     <div
-                      className={`hidden md:block ml-auto transition-all duration-300 ${
-                        activeMenu === menu.key
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
-                      }`}
+                      className={`hidden md:block ml-auto transition-all duration-300 ${activeMenu === menu.key
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100"
+                        }`}
                     >
                       <div className="w-1.5 h-1.5 border-r-2 border-t-2 border-current transform rotate-45"></div>
                     </div>
@@ -606,100 +675,282 @@ const AdminDashboard: React.FC = () => {
       <div className="transition-all duration-300 ml-20 md:ml-72"></div>
       <div className="p-10 bg-gradient-to-br bg-blue-50 min-h-screen w-full max-w-full overflow-x-hidden">
         <h1 className="text-4xl font-bold mb-10 text-blue-700 text-left w-full">
-          Dashboard
+          {activeMenu === "dashboard"
+            ? "Dashboard"
+            : activeMenu === "pengguna"
+              ? "Pengguna"
+              : activeMenu === "kategori"
+                ? "Kategori"
+                : activeMenu === "konten"
+                  ? "Konten"
+                  : activeMenu === "quotes"
+                    ? "Quotes"
+                    : activeMenu === "questions"
+                      ? "Pretest"
+                      : activeMenu === "pretest-rules"
+                        ? "Pretest Rules"
+                        : activeMenu === "relax-tracks"
+                          ? "Audio"
+                          : activeMenu === "monitoring-chat"
+                            ? "Monitoring Chat"
+                            : "Dashboard"}
         </h1>
+
         {/* Dashboard Statistik */}
         {activeMenu === "dashboard" && (
-          <div className="grid grid-cols-2 grid-rows-2 gap-6 mb-6 h-[32rem]">
+          <div className="grid grid-cols-2 gap-6 mb-6 h-[19rem]">
             <div className="bg-white p-4 rounded-xl shadow flex flex-col h-full min-h-0">
-              <h2 className=" mb-2 text-base text-black text-center w-full">
-                Statistik Kunjungan Per Bulan
+              <h2 className="mb-1 text-base text-black text-center w-full">
+                Statistik Chat Per Bulan
               </h2>
-
+              {/* Range picker bulan */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+                <input
+                  type="month"
+                  value={monthChartFrom}
+                  max={monthChartTo}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMonthChartFrom(e.target.value)}
+                  className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+                <span className="text-xs text-gray-400">s/d</span>
+                <input
+                  type="month"
+                  value={monthChartTo}
+                  min={monthChartFrom}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMonthChartTo(e.target.value)}
+                  className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+                <button
+                  onClick={() => fetchMonthly()}
+                  className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                >
+                  Tampilkan
+                </button>
+              </div>
               <div className="flex-1 flex items-center justify-center min-h-0">
                 <Bar
                   data={{
-                    // Ambil bulan tahun 2025 sampai bulan sekarang
                     labels: (() => {
-                      const now = new Date();
-                      const currentMonth = now.getMonth() + 1; // 1-12
-                      const months = [];
-                      for (let m = 1; m <= currentMonth; m++) {
-                        const mm = m.toString().padStart(2, "0");
-                        months.push(`2025-${mm}`);
+                      const bulan = ["","Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+                      const result: string[] = [];
+                      const [fy, fm] = monthChartFrom.split("-").map(Number);
+                      const [ty, tm] = monthChartTo.split("-").map(Number);
+                      let y = fy, m = fm;
+                      while (y < ty || (y === ty && m <= tm)) {
+                        result.push(`${bulan[m]} ${y}`);
+                        m++; if (m > 12) { m = 1; y++; }
                       }
-                      const bulan = [
-                        "",
-                        "Januari",
-                        "Februari",
-                        "Maret",
-                        "April",
-                        "Mei",
-                        "Juni",
-                        "Juli",
-                        "Agustus",
-                        "September",
-                        "Oktober",
-                        "November",
-                        "Desember",
-                      ];
-                      return months.map((m) => {
-                        const [y, mo] = m.split("-");
-                        return `${bulan[parseInt(mo, 10)]} ${y}`;
-                      });
+                      return result;
                     })(),
-                    datasets: [
-                      {
-                        label: "Jumlah Kunjungan",
-                        data: (() => {
-                          const now = new Date();
-                          const currentMonth = now.getMonth() + 1;
-                          const months = [];
-                          for (let m = 1; m <= currentMonth; m++) {
-                            const mm = m.toString().padStart(2, "0");
-                            months.push(`2025-${mm}`);
-                          }
-                          return months.map((m) =>
-                            monthlyVisitors.labels.indexOf(m) !== -1
-                              ? monthlyVisitors.data[
-                                  monthlyVisitors.labels.indexOf(m)
-                                ]
-                              : 0
-                          );
-                        })(),
-                        backgroundColor: "#60a5fa",
-                        borderRadius: 8,
-                      },
-                    ],
+                    datasets: [{
+                      label: "Jumlah Kunjungan",
+                      data: (() => {
+                        const keys: string[] = [];
+                        const [fy, fm] = monthChartFrom.split("-").map(Number);
+                        const [ty, tm] = monthChartTo.split("-").map(Number);
+                        let y = fy, m = fm;
+                        while (y < ty || (y === ty && m <= tm)) {
+                          keys.push(`${y}-${String(m).padStart(2, "0")}`);
+                          m++; if (m > 12) { m = 1; y++; }
+                        }
+                        return keys.map((k) => {
+                          const idx = monthlyVisitors.labels.indexOf(k);
+                          return idx !== -1 ? monthlyVisitors.data[idx] : 0;
+                        });
+                      })(),
+                      backgroundColor: "#60a5fa",
+                      borderRadius: 8,
+                    }],
                   }}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
                   }}
-                  height={180}
                 />
               </div>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow flex flex-col h-full min-h-0">
-              <h2 className=" mb-2 text-base text-black text-center w-full">
-                Pengguna Berdasarkan Usia & Gender
+            <div className="bg-white p-4 rounded-xl shadow flex flex-col items-center justify-center h-full min-h-0 gap-3">
+              <h2 className="text-base text-black">
+                Total Jumlah Pengguna
               </h2>
-              <div className="flex-1 flex items-center justify-center min-h-0">
+              <div className="text-6xl font-bold text-blue-500">
+                {usersOnly.length + guestCount}
+              </div>
+              <div className="flex gap-4 text-sm">
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl font-semibold text-blue-600">{usersOnly.length}</span>
+                  <span className="text-xs text-gray-500 mt-0.5">Terdaftar</span>
+                </div>
+                <div className="w-px bg-gray-200" />
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl font-semibold text-amber-500">{guestCount}</span>
+                  <span className="text-xs text-gray-500 mt-0.5">Tamu</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeMenu === "dashboard" && (
+          <div className="flex items-center justify-end mb-2">
+            <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeTestSessions}
+                onChange={(e) => setIncludeTestSessions(e.target.checked)}
+                className="accent-blue-500"
+              />
+              Masukkan sesi testing
+            </label>
+          </div>
+        )}
+        {activeMenu === "dashboard" && (
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            {/* Distribusi Jam Aktif */}
+            <div className="bg-white p-4 rounded-xl shadow flex flex-col" style={{ height: "20rem" }}>
+              <h2 className="mb-1 text-base text-black text-center w-full">
+                Distribusi Jam Aktif
+              </h2>
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+                <DatePicker
+                  selected={activeHourFrom ? new Date(activeHourFrom + "T00:00:00") : null}
+                  onChange={(date: Date | null) =>
+                    setActiveHourFrom(date ? format(date, "yyyy-MM-dd") : "")
+                  }
+                  maxDate={activeHourTo ? new Date(activeHourTo + "T00:00:00") : undefined}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="dd/mm/yyyy"
+                  isClearable
+                  locale={idLocale}
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 w-28"
+                />
+                <span className="text-xs text-gray-400">s/d</span>
+                <DatePicker
+                  selected={activeHourTo ? new Date(activeHourTo + "T00:00:00") : null}
+                  onChange={(date: Date | null) =>
+                    setActiveHourTo(date ? format(date, "yyyy-MM-dd") : "")
+                  }
+                  minDate={activeHourFrom ? new Date(activeHourFrom + "T00:00:00") : undefined}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="dd/mm/yyyy"
+                  isClearable
+                  locale={idLocale}
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 w-28"
+                />
+                {(activeHourFrom || activeHourTo) && (
+                  <button
+                    onClick={() => { setActiveHourFrom(""); setActiveHourTo(""); }}
+                    className="px-2 py-1 text-xs text-gray-500 hover:text-red-500 border border-gray-200 rounded transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 text-center mb-1">
+                {activeHourData.reduce((a: number, b: number) => a + b, 0)} pesan
+                {activeHourFrom || activeHourTo ? " dalam rentang terpilih" : " keseluruhan"}
+                {includeTestSessions ? " (termasuk sesi testing)" : " (tanpa sesi testing)"}
+              </p>
+              <div className="flex-1 min-h-0">
                 <Bar
                   data={{
-                    labels: getUserByAgeGender(usersOnly).labels,
+                    labels: Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")),
+                    datasets: [{
+                      label: "Jumlah Pesan",
+                      data: activeHourData,
+                      backgroundColor: activeHourData.map((v: number) =>
+                        v === activeHourMax && activeHourMax > 0 ? "#6366f1" : "#a5b4fc"
+                      ),
+                      borderRadius: 4,
+                    }],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      x: { ticks: { font: { size: 10 } } },
+                      y: { beginAtZero: true, ticks: { precision: 0 } },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Distribusi Panjang Sesi */}
+            <div className="bg-white p-4 rounded-xl shadow flex flex-col" style={{ height: "20rem" }}>
+              <h2 className="mb-1 text-base text-black text-center w-full">
+                Distribusi Panjang Sesi
+              </h2>
+              <p className="text-xs text-gray-400 text-center mb-2">
+                {sessionLengthData.reduce((a: number, b: number) => a + b, 0)} sesi (semua waktu)
+                {includeTestSessions ? " (termasuk sesi testing)" : " (tanpa sesi testing)"}
+              </p>
+              <div className="flex-1 min-h-0">
+                <Bar
+                  data={{
+                    labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "≥10"],
+                    datasets: [{
+                      label: "Jumlah Sesi",
+                      data: sessionLengthData,
+                      backgroundColor: [
+                        "#93c5fd",
+                        "#6ee7b7",
+                        "#fde68a",
+                        "#fdba74",
+                        "#fca5a5",
+                        "#f9a8d4",
+                        "#c4b5fd",
+                        "#818cf8",
+                        "#67e8f9",
+                        "#475569",
+                      ],
+                      borderRadius: 4,
+                    }],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      y: { beginAtZero: true, ticks: { precision: 0 } },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        {activeMenu === "dashboard" && (
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="bg-white p-4 rounded-xl shadow flex flex-col" style={{ height: "20rem" }}>
+              <h2 className="mb-1 text-base text-black text-center w-full">
+                Pengguna Berdasarkan Usia & Gender
+              </h2>
+              <p className="text-xs text-gray-400 text-center mb-2">
+                {usersWithBothCount} dari {usersOnly.length} pengguna (data usia & gender lengkap)
+              </p>
+              <div className="flex-1 min-h-0">
+                <Bar
+                  data={{
+                    labels: ageGenderData.labels,
                     datasets: [
                       {
                         label: "Laki-laki",
-                        data: getUserByAgeGender(usersOnly).laki,
+                        data: ageGenderData.laki,
                         backgroundColor: "#3498DB",
                         borderRadius: 8,
                       },
                       {
                         label: "Perempuan",
-                        data: getUserByAgeGender(usersOnly).perempuan,
+                        data: ageGenderData.perempuan,
                         backgroundColor: "#FF00FF",
                         borderRadius: 8,
                       },
@@ -710,50 +961,27 @@ const AdminDashboard: React.FC = () => {
                     maintainAspectRatio: false,
                     plugins: { legend: { position: "top" } },
                     scales: {
-                      y: {
-                        beginAtZero: true,
-                        ticks: {
-                          stepSize: 10,
-                          precision: 0,
-                        },
-                      },
+                      y: { beginAtZero: true, ticks: { precision: 0 } },
                     },
                   }}
-                  height={180}
                 />
               </div>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow flex flex-col items-center justify-center h-full min-h-0">
-              <h2 className=" mb-2 text-base text-black">
-                Total Jumlah Pengguna
-              </h2>
-              <div className="text-6xl font-bold text-blue-500">
-                {usersOnly.length}
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow flex flex-col h-full min-h-0">
-              <h2 className="mb-2 text-base text-black text-center w-full">
+            <div className="bg-white p-4 rounded-xl shadow flex flex-col" style={{ height: "20rem" }}>
+              <h2 className="mb-1 text-base text-black text-center w-full">
                 Usia Pengguna
               </h2>
-              <div className="flex-1 flex items-center justify-center min-h-0">
+              <p className="text-xs text-gray-400 text-center mb-2">
+                {usersWithAgeCount} dari {usersOnly.length} pengguna (data usia lengkap)
+              </p>
+              <div className="flex-1 min-h-0">
                 <Pie
                   data={{
-                    labels: [
-                      "12-15 tahun",
-                      "16-20 tahun",
-                      "21-25 tahun",
-                      "> 25 tahun",
-                    ],
+                    labels: ["12-15 tahun", "16-20 tahun", "21-25 tahun", "> 25 tahun"],
                     datasets: [
                       {
-                        data: getUserAgeGroups(usersOnly),
-                        backgroundColor: [
-                          "#E74C3C",
-                          "#3498DB",
-
-                          "#9B59B6",
-                          "#2ECC71",
-                        ],
+                        data: ageGroupData,
+                        backgroundColor: ["#E74C3C", "#3498DB", "#9B59B6", "#2ECC71"],
                         borderColor: "#fff",
                         borderWidth: 2,
                       },
@@ -762,11 +990,8 @@ const AdminDashboard: React.FC = () => {
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                      legend: { position: "right" },
-                    },
+                    plugins: { legend: { position: "right" } },
                   }}
-                  height={180}
                 />
               </div>
             </div>
@@ -811,7 +1036,7 @@ const AdminDashboard: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="min-w-full text-left rounded-xl overflow-hidden">
                 <thead>
-                  <tr className="bg-blue-500 text-white font-semibold">
+                  <tr className="bg-green-500 text-white font-semibold">
                     <th className="py-3 px-4">ID</th>
                     <th className="py-3 px-4">Nama</th>
                     <th className="py-3 px-4">Email</th>
@@ -826,9 +1051,8 @@ const AdminDashboard: React.FC = () => {
                   {filteredUsers.map((u, idx) => (
                     <tr
                       key={u._id}
-                      className={`transition ${
-                        idx % 2 === 0 ? "bg-white" : "bg-blue-50"
-                      }`}
+                      className={`transition ${idx % 2 === 0 ? "bg-white" : "bg-blue-50"
+                        }`}
                     >
                       <td className="py-2 px-4">{u._id}</td>
                       <td className="py-2 px-4 whitespace-nowrap truncate max-w-[160px]">
@@ -912,78 +1136,6 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         )}
-        {activeMenu === "statistik" && (
-          <div className="bg-white p-6 rounded-xl shadow mb-8">
-            <h2 className="font-semibold mb-4 text-xl text-blue-700">
-              Statistik Pengunjung Per Hari
-            </h2>
-            <div className="flex flex-wrap gap-2 mb-4 items-center">
-              <span className="text-sm">Tanggal:</span>
-              <DatePicker
-                selected={visitorStart}
-                onChange={(date) => setVisitorStart(date)}
-                selectsStart
-                startDate={visitorStart ?? undefined}
-                endDate={visitorEnd ?? undefined}
-                dateFormat="yyyy-MM-dd"
-                className="border rounded px-3 py-2 text-sm"
-                placeholderText="Mulai"
-              />
-              <span>-</span>
-              <DatePicker
-                selected={visitorEnd}
-                onChange={(date) => setVisitorEnd(date)}
-                selectsEnd
-                startDate={visitorStart ?? undefined}
-                endDate={visitorEnd ?? undefined}
-                minDate={visitorStart ?? undefined}
-                dateFormat="yyyy-MM-dd"
-                className="border rounded px-3 py-2 text-sm"
-                placeholderText="Selesai"
-              />
-              <button
-                className="ml-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={() =>
-                  fetchDailyVisitors(
-                    visitorStart ?? undefined,
-                    visitorEnd ?? undefined
-                  )
-                }
-              >
-                Tampilkan
-              </button>
-            </div>
-            <div className="w-full h-96">
-              <Bar
-                data={{
-                  labels: dailyVisitors.labels,
-                  datasets: [
-                    {
-                      label: "Jumlah Pengunjung",
-                      data: dailyVisitors.data,
-                      backgroundColor: "#60a5fa",
-                      borderRadius: 8,
-                    },
-                  ],
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        stepSize: 1,
-                        precision: 0,
-                      },
-                    },
-                  },
-                }}
-              />
-            </div>
-          </div>
-        )}
         {activeMenu === "kategori" && (
           <div className="bg-white p-6 rounded-xl shadow mb-8">
             <h2 className="font-semibold mb-4 text-xl text-blue-700">
@@ -1016,7 +1168,7 @@ const AdminDashboard: React.FC = () => {
                 setEditingCategory(null);
                 // Refresh kategori
                 const cats = await axios.get("/api/admin/categories", config);
-                setCategories(cats.data);
+                setCategories(Array.isArray(cats.data) ? cats.data : []);
               }}
               className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4"
             >
@@ -1108,9 +1260,8 @@ const AdminDashboard: React.FC = () => {
                   {categories.map((cat: any, idx: number) => (
                     <tr
                       key={cat._id}
-                      className={`transition ${
-                        idx % 2 === 0 ? "bg-white" : "bg-blue-50"
-                      }`}
+                      className={`transition ${idx % 2 === 0 ? "bg-white" : "bg-blue-50"
+                        }`}
                     >
                       <td className="py-2 px-4">{cat.name}</td>
                       <td className="py-2 px-4">{cat.description}</td>
@@ -1155,7 +1306,7 @@ const AdminDashboard: React.FC = () => {
                                 "/api/admin/categories",
                                 config
                               );
-                              setCategories(cats.data);
+                              setCategories(Array.isArray(cats.data) ? cats.data : []);
                             }
                           }}
                         >
@@ -1230,7 +1381,7 @@ const AdminDashboard: React.FC = () => {
                   setContentValue("");
                   // Refresh konten
                   const conts = await axios.get("/api/admin/contents", config);
-                  setContents(conts.data);
+                  setContents(Array.isArray(conts.data) ? conts.data : []);
                 }}
                 className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
               >
@@ -1375,7 +1526,7 @@ const AdminDashboard: React.FC = () => {
                             "/api/admin/contents",
                             config
                           );
-                          setContents(conts.data);
+                          setContents(Array.isArray(conts.data) ? conts.data : []);
                         } catch (error) {
                           console.error("Error updating content:", error);
                         }
@@ -1602,9 +1753,8 @@ const AdminDashboard: React.FC = () => {
                   {contents.map((c: any, idx: number) => (
                     <tr
                       key={c._id}
-                      className={`transition ${
-                        idx % 2 === 0 ? "bg-white" : "bg-blue-50"
-                      }`}
+                      className={`transition ${idx % 2 === 0 ? "bg-white" : "bg-blue-50"
+                        }`}
                     >
                       <td className="py-2 px-4 font-semibold">{c.title}</td>
                       <td className="py-2 px-4">
@@ -1696,9 +1846,8 @@ const AdminDashboard: React.FC = () => {
                           {/* Label ON */}
                           <span
                             className={`absolute left-2 text-xs font-bold transition-opacity duration-300 z-10
-                  ${
-                    c.flag ? "text-white opacity-100" : "text-white opacity-50"
-                  }`}
+                  ${c.flag ? "text-white opacity-100" : "text-white opacity-50"
+                              }`}
                           >
                             ON
                           </span>
@@ -1706,9 +1855,8 @@ const AdminDashboard: React.FC = () => {
                           {/* Label OFF */}
                           <span
                             className={`absolute right-2 text-xs font-bold transition-opacity duration-300 z-10
-                  ${
-                    !c.flag ? "text-white opacity-100" : "text-white opacity-50"
-                  }`}
+                  ${!c.flag ? "text-white opacity-100" : "text-white opacity-50"
+                              }`}
                           >
                             OFF
                           </span>
@@ -1872,8 +2020,8 @@ const AdminDashboard: React.FC = () => {
                             tags: Array.isArray(editingQuote.tags)
                               ? editingQuote.tags
                               : (editingQuote.tags || "")
-                                  .split(",")
-                                  .map((t: string) => t.trim()),
+                                .split(",")
+                                .map((t: string) => t.trim()),
                           },
                           config
                         );
@@ -1883,7 +2031,7 @@ const AdminDashboard: React.FC = () => {
                           "/api/admin/quotes",
                           config
                         );
-                        setQuotes(res.data);
+                        setQuotes(Array.isArray(res.data) ? res.data : []);
                       }}
                       className="space-y-4"
                     >
@@ -2065,9 +2213,8 @@ const AdminDashboard: React.FC = () => {
                   {quotes.map((q: any, idx: number) => (
                     <tr
                       key={q._id}
-                      className={`transition ${
-                        idx % 2 === 0 ? "bg-white" : "bg-blue-50"
-                      }`}
+                      className={`transition ${idx % 2 === 0 ? "bg-white" : "bg-blue-50"
+                        }`}
                     >
                       <td className="py-2 px-4">{q.text}</td>
                       <td className="py-2 px-4">
@@ -2133,21 +2280,19 @@ const AdminDashboard: React.FC = () => {
                         >
                           <span
                             className={`absolute left-2 text-xs font-bold transition-opacity duration-300 z-10
-                      ${
-                        q.flag
-                          ? "text-white opacity-100"
-                          : "text-white opacity-50"
-                      }`}
+                      ${q.flag
+                                ? "text-white opacity-100"
+                                : "text-white opacity-50"
+                              }`}
                           >
                             ON
                           </span>
                           <span
                             className={`absolute right-2 text-xs font-bold transition-opacity duration-300 z-10
-                      ${
-                        !q.flag
-                          ? "text-white opacity-100"
-                          : "text-white opacity-50"
-                      }`}
+                      ${!q.flag
+                                ? "text-white opacity-100"
+                                : "text-white opacity-50"
+                              }`}
                           >
                             OFF
                           </span>
@@ -2164,6 +2309,30 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Questions */}
+        {activeMenu === "questions" && (
+          <div className="bg-white p-0 rounded-xl shadow mb-8">
+            <AdminQuestions />
+          </div>
+        )}
+
+        {/* Pretest Rules */}
+        {activeMenu === "pretest-rules" && (
+          <div className="bg-white p-0 rounded-xl shadow mb-8">
+            <AdminPretestRules />
+          </div>
+        )}
+
+        {/* Relax Tracks */}
+        {activeMenu === "relax-tracks" && (
+          <div className="bg-white p-0 rounded-xl shadow mb-8">
+            <AdminRelaxTracks />
+          </div>
+        )}
+
+        {/* Monitoring Chat */}
+        {activeMenu === "monitoring-chat" && <AdminMonitoringChat />}
 
         {/* Menu lain bisa ditambahkan di sini */}
         {selectedUser && (

@@ -8,6 +8,8 @@ import { toast } from "react-toastify";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import TetaIcon from "./TetaIcon";
 
+const GUEST_LOGIN_ENABLED = import.meta.env?.VITE_ENABLE_GUEST_LOGIN !== "false";
+
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -156,7 +158,7 @@ const Login = () => {
     <div className="relative flex items-center justify-center min-h-screen min-w-full">
       <div className="absolute inset-0 -z-10" />
 
-      {showGuestPopup && (
+      {GUEST_LOGIN_ENABLED && showGuestPopup && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           onClick={handleBackdropClick}
@@ -237,13 +239,15 @@ const Login = () => {
             <p className="text-sm text-rose-500">{errors.password}</p>
           )}
           <div className="flex justify-between items-center text-xs">
-            <button
-              onClick={() => setShowGuestPopup(true)}
-              type="button"
-              className="text-login hover:underline font-medium bg-transparent"
-            >
-              Masuk tanpa login
-            </button>
+            {GUEST_LOGIN_ENABLED && (
+              <button
+                onClick={() => setShowGuestPopup(true)}
+                type="button"
+                className="text-login hover:underline font-medium bg-transparent"
+              >
+                Masuk tanpa login
+              </button>
+            )}
             <Link
               to="/forgotPassword"
               className="text-login hover:underline font-medium"

@@ -41,6 +41,17 @@ interface ChatSession {
   sessionId: string;
 }
 
+// Set false to hide Export XLS / Export JSON from chat session dropdown during user testing
+const ENABLE_EXPORT_MENU = false;
+// Set false to hide Delete button from chat session dropdown during user testing
+const ENABLE_DELETE_MENU: boolean = false;
+
+const MODEL_OPTIONS = [
+  { value: "gemma3", label: "Teta v2.0", disabled: false },
+  { value: "gemma4", label: "Gemma 4", disabled: true },
+  { value: "netmind", label: "Netmind", disabled: true },
+]
+
 const toMs = (v: unknown): number => {
   if (!v) return -Infinity;
   if (v instanceof Date) return isNaN(v.getTime()) ? -Infinity : v.getTime();
@@ -66,42 +77,46 @@ const escapeHtml = (input: string): string =>
     .replace(/"/g, "&quot;");
 
 const formatInline = (input: string): string =>
-  input.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  input
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "$1");
 
 const formatBotTextToHtml = (text: string): string => {
-  let t = text.replace(/\r\n/g, "\n");
-  t = t.replace(/\s+(?=\*\*\d+\.)/g, "\n");
-  t = t.replace(/\s+(?=\*\*[^*]+:\*\*)/g, "\n");
-  t = t.replace(/\s+\*\s+/g, "\n* ");
-
-  const lines = t
+  const lines = text
+    .replace(/\r\n/g, "\n")
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
 
   let html = "";
-  let inList = false;
+  let inUl = false;
+  let inOl = false;
 
   for (const line of lines) {
-    const safeLine = formatInline(escapeHtml(line));
-    if (safeLine.startsWith("* ")) {
-      if (!inList) {
-        html += '<ul class="list-disc pl-5 space-y-1">';
-        inList = true;
-      }
-      html += `<li>${safeLine.slice(2)}</li>`;
+    const safe = formatInline(escapeHtml(line));
+
+    if (safe.startsWith("* ") || safe.startsWith("- ")) {
+      if (inOl) { html += "</ol>"; inOl = false; }
+      if (!inUl) { html += '<ul class="list-disc pl-5 space-y-1">'; inUl = true; }
+      html += `<li>${safe.slice(2)}</li>`;
       continue;
     }
 
-    if (inList) {
-      html += "</ul>";
-      inList = false;
+    const numMatch = safe.match(/^(\d+)\.\s+([\s\S]+)/);
+    if (numMatch) {
+      if (inUl) { html += "</ul>"; inUl = false; }
+      if (!inOl) { html += '<ol class="list-decimal pl-5 space-y-1">'; inOl = true; }
+      html += `<li>${numMatch[2]}</li>`;
+      continue;
     }
 
-    html += `<p class="mb-2">${safeLine}</p>`;
+    if (inUl) { html += "</ul>"; inUl = false; }
+    if (inOl) { html += "</ol>"; inOl = false; }
+    html += `<p class="mb-2">${safe}</p>`;
   }
 
-  if (inList) html += "</ul>";
+  if (inUl) html += "</ul>";
+  if (inOl) html += "</ol>";
 
   return html;
 };
@@ -162,6 +177,9 @@ const Home: React.FC = (): React.ReactElement => {
   const [, setIsLoggedIn] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isBotTyping, setIsBotTyping] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<(typeof MODEL_OPTIONS)[number]["value"]>("gemma3");
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // helper
 
@@ -300,6 +318,16 @@ const Home: React.FC = (): React.ReactElement => {
     if (showUserMenu) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showUserMenu]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setShowModelDropdown(false);
+      }
+    }
+    if (showModelDropdown) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showModelDropdown]);
 
   // fetch user
   useEffect(() => {
@@ -569,7 +597,7 @@ const Home: React.FC = (): React.ReactElement => {
     try {
       setIsBotTyping(true);
 
-      const systemPrompt = { role: "system", content: `Kamu adalah chatbot pendamping kesehatan mental...` };
+      const systemPrompt = { role: "system", content: `Kamu adalah Teta, chatbot pendamping kesehatan mental untuk remaja. Nama kamu adalah Teta, singkatan dari Teman Cerita. Jawab dengan hangat, empatik, dan gunakan bahasa yang mudah dipahami remaja.` };
       const allMessages = [
         systemPrompt,
         ...messages.map((m) => ({ role: m.isUser ? "user" : "assistant", content: m.text })),
@@ -583,11 +611,9 @@ const Home: React.FC = (): React.ReactElement => {
       //   userId: localStorage.getItem("userId"),
       // });
 
-      const response = await axios.post(import.meta.env?.VITE_CHAT_URL + "chat/netmind", {
-        messages: allMessages,
-        sessionId: sid,
-        userId: localStorage.getItem("userId"),
-      });
+      const response = selectedModel === "netmind"
+        ? await axios.post(import.meta.env?.VITE_CHAT_URL + "chat/netmind", { messages: allMessages })
+        : await axios.post(import.meta.env?.VITE_CHAT_URL + "chat/gpuhub", { messages: allMessages, model: selectedModel });
 
       // const response = await axios.post(import.meta.env?.VITE_API_URL + "/api/hf/chat", {
       // messages: allMessages,
@@ -599,13 +625,9 @@ const Home: React.FC = (): React.ReactElement => {
       setIsBotTyping(false);
 
       const botText =
-        typeof response.data?.answer === "string" && response.data.answer.trim() !== ""
+        response.data.answer && response.data.answer.trim() !== ""
           ? response.data.answer.trim()
-          : typeof response.data?.error === "string" && response.data.error.trim() !== ""
-            ? response.data.error.trim()
-            : typeof response.data?.message === "string" && response.data.message.trim() !== ""
-              ? response.data.message.trim()
-              : "Maaf, aku tidak mengerti pertanyaanmu.";
+          : "Maaf, aku tidak mengerti pertanyaanmu.";
 
       const botMessage: Message = {
         id: Date.now().toString(),
@@ -924,7 +946,8 @@ const Home: React.FC = (): React.ReactElement => {
                                 </svg>
                                 Rename
                               </div>
-                             <div
+                             {ENABLE_DELETE_MENU && (
+                              <div
                                 className="px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 cursor-pointer transition-colors flex items-center"
                                 onClick={() => {
                                   setActiveDropdown(null);
@@ -936,32 +959,37 @@ const Home: React.FC = (): React.ReactElement => {
                                 </svg>
                                 Delete
                               </div>
-                              <div
-                                className="px-2 py-1.5 text-xs text-green-600 hover:bg-green-50 cursor-pointer transition-colors flex items-center"
-                                onClick={() => {
-                                  setActiveDropdown(null);
-                                  handleExportToXLS(chat.sessionId);
-                                }}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2z" />
-                                  <path d="M7 12h10M7 16h10M7 8h10" />
-                                </svg>
-                                Export XLS
-                              </div>
-                              <div
-                                className="px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50 cursor-pointer transition-colors flex items-center"
-                                onClick={() => {
-                                  setActiveDropdown(null);
-                                  handleExportToJSON(chat.sessionId);
-                                }}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2z" />
-                                  <path d="M7 8h10M7 12h10M7 16h6" />
-                                </svg>
-                                Export JSON
-                              </div>
+                              )}
+                              {ENABLE_EXPORT_MENU && (
+                                <>
+                                  <div
+                                    className="px-2 py-1.5 text-xs text-green-600 hover:bg-green-50 cursor-pointer transition-colors flex items-center"
+                                    onClick={() => {
+                                      setActiveDropdown(null);
+                                      handleExportToXLS(chat.sessionId);
+                                    }}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2z" />
+                                      <path d="M7 12h10M7 16h10M7 8h10" />
+                                    </svg>
+                                    Export XLS
+                                  </div>
+                                  <div
+                                    className="px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50 cursor-pointer transition-colors flex items-center"
+                                    onClick={() => {
+                                      setActiveDropdown(null);
+                                      handleExportToJSON(chat.sessionId);
+                                    }}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 16V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2z" />
+                                      <path d="M7 8h10M7 12h10M7 16h6" />
+                                    </svg>
+                                    Export JSON
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1234,21 +1262,67 @@ const Home: React.FC = (): React.ReactElement => {
                     ref={textareaRef}
                     className="w-full pt-4 pb-14 px-5 pr-16 rounded-3xl shadow-md border border-gray-300 bg-gray-100 focus:outline-none text-gray-600 placeholder-gray-400 text-sm leading-6 resize-none max-h-24 overflow-y-auto"
                   />
-                  <button
-                    onClick={() => handleSendMessage()}
-                    className={`absolute right-3 bottom-3 p-2 rounded-2xl transition flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                      inputMessage.trim()
-                        ? "bg-gray-900 hover:bg-gray-800 text-white"
-                        : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                    }`}
-                    disabled={inputMessage.trim() === ""}
-                    aria-label="Send message"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="19" x2="12" y2="7" />
-                      <polyline points="6 13 12 7 18 13" />
-                    </svg>
-                  </button>
+
+                  {/* Bottom-right controls: model selector + send button */}
+                  <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                    {/* Model selector */}
+                    <div className="relative" ref={modelDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setShowModelDropdown((v: boolean) => !v)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs font-medium transition-colors"
+                      >
+                        <span>{MODEL_OPTIONS.find((m) => m.value === selectedModel)?.label}</span>
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {showModelDropdown && (
+                        <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden min-w-[130px]">
+                          {MODEL_OPTIONS.filter((opt) => !opt.disabled).map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              disabled={opt.disabled}
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
+                                opt.disabled
+                                  ? "text-gray-300 cursor-not-allowed"
+                                  : selectedModel === opt.value
+                                  ? "text-indigo-600 font-semibold bg-indigo-50"
+                                  : "text-gray-700 hover:bg-gray-50"
+                              }`}
+                              onClick={() => { if (!opt.disabled) { setSelectedModel(opt.value); setShowModelDropdown(false); } }}
+                            >
+                              {opt.label}
+                              {!opt.disabled && selectedModel === opt.value && (
+                                <svg className="h-3 w-3 ml-auto text-indigo-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Send button */}
+                    <button
+                      onClick={() => handleSendMessage()}
+                      className={`p-2 rounded-2xl transition flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                        inputMessage.trim()
+                          ? "bg-gray-900 hover:bg-gray-800 text-white"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                      }`}
+                      disabled={inputMessage.trim() === ""}
+                      aria-label="Send message"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="7" />
+                        <polyline points="6 13 12 7 18 13" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

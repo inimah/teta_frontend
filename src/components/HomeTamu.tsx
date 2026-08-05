@@ -1,5 +1,11 @@
 import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
+
+const MODEL_OPTIONS = [
+  { value: "gemma3", label: "Teta v2.0", disabled: false },
+  { value: "gemma4", label: "Gemma 4", disabled: true },
+  { value: "netmind", label: "Netmind", disabled: true },
+];
 import { useNavigate } from "react-router-dom";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { FaceSmileIcon } from "@heroicons/react/24/outline";
@@ -22,44 +28,54 @@ const escapeHtml = (input: string): string =>
     .replace(/"/g, "&quot;");
 
 const formatInline = (input: string): string =>
-  input.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  input
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "$1");
 
 const formatBotTextToHtml = (text: string): string => {
-  let t = text.replace(/\r\n/g, "\n");
-  t = t.replace(/\s+(?=\*\*\d+\.)/g, "\n");
-  t = t.replace(/\s+(?=\*\*[^*]+:\*\*)/g, "\n");
-  t = t.replace(/\s+\*\s+/g, "\n* ");
-
-  const lines = t
+  const lines = text
+    .replace(/\r\n/g, "\n")
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
 
   let html = "";
-  let inList = false;
+  let inUl = false;
+  let inOl = false;
 
   for (const line of lines) {
-    const safeLine = formatInline(escapeHtml(line));
-    if (safeLine.startsWith("* ")) {
-      if (!inList) {
-        html += '<ul class="list-disc pl-5 space-y-1">';
-        inList = true;
-      }
-      html += `<li>${safeLine.slice(2)}</li>`;
+    const safe = formatInline(escapeHtml(line));
+
+    if (safe.startsWith("* ") || safe.startsWith("- ")) {
+      if (inOl) { html += "</ol>"; inOl = false; }
+      if (!inUl) { html += '<ul class="list-disc pl-5 space-y-1">'; inUl = true; }
+      html += `<li>${safe.slice(2)}</li>`;
       continue;
     }
 
-    if (inList) {
-      html += "</ul>";
-      inList = false;
+    const numMatch = safe.match(/^(\d+)\.\s+([\s\S]+)/);
+    if (numMatch) {
+      if (inUl) { html += "</ul>"; inUl = false; }
+      if (!inOl) { html += '<ol class="list-decimal pl-5 space-y-1">'; inOl = true; }
+      html += `<li>${numMatch[2]}</li>`;
+      continue;
     }
 
-    html += `<p class="mb-2">${safeLine}</p>`;
+    if (inUl) { html += "</ul>"; inUl = false; }
+    if (inOl) { html += "</ol>"; inOl = false; }
+    html += `<p class="mb-2">${safe}</p>`;
   }
 
-  if (inList) html += "</ul>";
+  if (inUl) html += "</ul>";
+  if (inOl) html += "</ol>";
 
   return html;
+};
+
+const generateTamuSessionId = (): string => {
+  const isTest = new URLSearchParams(window.location.search).get("test") === "1";
+  const prefix = isTest ? "test-tamu-" : "tamu-";
+  return prefix + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
 };
 
 const HomeTamu: React.FC = (): React.ReactElement => {
@@ -69,9 +85,18 @@ const HomeTamu: React.FC = (): React.ReactElement => {
   const [currentCategory, setCurrentCategory] = useState<string>("Hari ini");
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // Session ID dibuat sekali saat mount — setiap kunjungan tamu = sesi baru
+  const [tamuSessionId] = useState<string>(() => {
+    localStorage.removeItem("tamuSessionId");
+    localStorage.removeItem("tamuSessionId_test");
+    return generateTamuSessionId();
+  });
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<(typeof MODEL_OPTIONS)[number]["value"]>("gemma3");
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const name = localStorage.getItem("guestName") || "Tamu";
 
@@ -98,6 +123,16 @@ const HomeTamu: React.FC = (): React.ReactElement => {
     applyTheme(theme);
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setShowModelDropdown(false);
+      }
+    }
+    if (showModelDropdown) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showModelDropdown]);
+
   const handleSendMessage = async (customMessage?: string): Promise<void> => {
     const messageToSend = customMessage ?? inputMessage;
     if (messageToSend.trim() === "") return;
@@ -116,16 +151,16 @@ const HomeTamu: React.FC = (): React.ReactElement => {
     try {
       setIsBotTyping(true);
 
-      const systemPrompt = { role: "system", content: `Kamu adalah chatbot pendamping kesehatan mental...` };
+      const systemPrompt = { role: "system", content: `Kamu adalah Teta, chatbot pendamping kesehatan mental untuk remaja. Nama kamu adalah Teta, singkatan dari Teman Cerita. Jawab dengan hangat, empatik, dan gunakan bahasa yang mudah dipahami remaja.` };
       const allMessages = [
         systemPrompt,
         ...messages.map((m) => ({ role: m.isUser ? "user" : "assistant", content: m.text })),
         { role: "user", content: messageToSend },
       ];
 
-      const response = await axios.post(import.meta.env?.VITE_CHAT_URL +  "chat/netmind", {
-        messages: allMessages
-      });
+      const response = selectedModel === "netmind"
+        ? await axios.post(import.meta.env?.VITE_CHAT_URL + "chat/netmind", { messages: allMessages })
+        : await axios.post(import.meta.env?.VITE_CHAT_URL + "chat/gpuhub", { messages: allMessages, model: selectedModel });
 
       setIsBotTyping(false);
 
@@ -138,6 +173,18 @@ const HomeTamu: React.FC = (): React.ReactElement => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
+
+      const botText = response.data.answer || "";
+      if (botText) {
+        const sid = tamuSessionId;
+        axios.post(import.meta.env?.VITE_API_URL + "api/chat/save-chat", {
+          sessionId: sid,
+          question: messageToSend,
+          answer: botText,
+          timestamp: new Date().toISOString(),
+          guestName: name,
+        }).catch((e: unknown) => console.error("Gagal menyimpan chat tamu:", e));
+      }
     } catch (error) {
       setIsBotTyping(false);
       setMessages((prev) => [
@@ -348,21 +395,63 @@ const HomeTamu: React.FC = (): React.ReactElement => {
                     ref={textareaRef}
                     className="w-full pt-4 pb-14 px-5 pr-16 rounded-3xl shadow-md border border-gray-300 bg-gray-100 focus:outline-none text-gray-600 placeholder-gray-400 text-sm leading-6 resize-none max-h-24 overflow-y-auto"
                   />
-                  <button
-                    onClick={() => handleSendMessage()}
-                    className={`absolute right-3 bottom-3 p-2 rounded-2xl transition flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                      inputMessage.trim()
-                        ? "bg-gray-900 hover:bg-gray-800 text-white"
-                        : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                    }`}
-                    disabled={inputMessage.trim() === ""}
-                    aria-label="Send message"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="19" x2="12" y2="7" />
-                      <polyline points="6 13 12 7 18 13" />
-                    </svg>
-                  </button>
+                  {/* Bottom-right controls: model selector + send button */}
+                  <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                    {/* Model selector */}
+                    <div className="relative" ref={modelDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setShowModelDropdown((v: boolean) => !v)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs font-medium transition-colors"
+                      >
+                        <span>{MODEL_OPTIONS.find((m) => m.value === selectedModel)?.label}</span>
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {showModelDropdown && (
+                        <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden min-w-[130px]">
+                          {MODEL_OPTIONS.filter((opt) => !opt.disabled).map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
+                                selectedModel === opt.value
+                                  ? "text-indigo-600 font-semibold bg-indigo-50"
+                                  : "text-gray-700 hover:bg-gray-50"
+                              }`}
+                              onClick={() => { setSelectedModel(opt.value); setShowModelDropdown(false); }}
+                            >
+                              {opt.label}
+                              {selectedModel === opt.value && (
+                                <svg className="h-3 w-3 ml-auto text-indigo-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Send button */}
+                    <button
+                      onClick={() => handleSendMessage()}
+                      className={`p-2 rounded-2xl transition flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                        inputMessage.trim()
+                          ? "bg-gray-900 hover:bg-gray-800 text-white"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                      }`}
+                      disabled={inputMessage.trim() === ""}
+                      aria-label="Send message"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="7" />
+                        <polyline points="6 13 12 7 18 13" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -316,10 +316,13 @@ const Registrasi = () => {
     try {
       const submittedEmail = formData.email; // simpan sebelum reset/navigate
 
-      const response = await fetch(import.meta.env?.VITE_API_URL + "api/auth/register", {
+      const url = (import.meta.env.VITE_API_URL || "").endsWith("/")
+        ? `${import.meta.env.VITE_API_URL}api/auth/register`
+        : `${import.meta.env.VITE_API_URL}/api/auth/register`;
+
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // kirimkan tanpa confirmPassword ke backend
         body: JSON.stringify({
           name: formData.name,
           sapaan: formData.sapaan,
